@@ -1,0 +1,202 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; --muted: #8E8E93; --sep: rgba(60,60,67,.18);
+    --fill: rgba(118,118,128,.12); --seg: #FFFFFF; --hover: rgba(0,122,255,.10);
+    --blue: #007AFF; --green: #34C759; --orange: #FF9500; --red: #FF3B30; --gray: #8E8E93;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #000000; --card: #1C1C1E; --text: #FFFFFF; --muted: #8E8E93; --sep: rgba(84,84,88,.6);
+      --fill: rgba(118,118,128,.24); --seg: #636366; --hover: rgba(10,132,255,.22);
+      --blue: #0A84FF; --green: #30D158; --orange: #FF9F0A; --red: #FF453A; }
+  }
+  * { box-sizing: border-box; }
+  body { min-width: 300px; margin: 0; padding: 0 16px 14px; background: var(--bg); color: var(--text);
+    font: 15px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+
+  header { display: flex; align-items: center; gap: 12px; padding: 18px 2px 14px; }
+  header img { width: 44px; height: 44px; border-radius: 10px; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+  header p { margin: 1px 0 0; font-size: 13px; color: var(--muted); }
+
+  .section-title { margin: 14px 16px 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
+  .section-title { display: flex; justify-content: space-between; }
+  .section-title small { text-transform: none; font-size: 12px; }
+  .group { background: var(--card); border-radius: 10px; overflow: hidden; }
+  .footnote { margin: 6px 16px 0; font-size: 12px; color: var(--muted); }
+  .footnote code { font: 12px ui-monospace, Menlo, monospace; }
+
+  .type { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; }
+  .type span { color: var(--text); }
+  .type b { font-weight: 400; color: var(--muted); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .type b.bad { color: var(--red); }
+
+  textarea { display: block; width: 100%; height: 130px; resize: vertical; padding: 11px 16px; border: 0; outline: none;
+    background: transparent; color: var(--text); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  textarea::placeholder { color: var(--muted); opacity: .7; }
+
+  .actions { display: flex; gap: 10px; margin-top: 16px; }
+  button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 44px;
+    border: 0; border-radius: 12px; font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    cursor: pointer; transition: opacity .15s; }
+  button:active:not(:disabled) { opacity: .6; }
+  button:disabled { opacity: .4; cursor: default; }
+  .secondary { background: var(--fill); color: var(--blue); }
+  .primary { background: var(--blue); color: #fff; }
+  .spin { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
+    animation: s .8s linear infinite; display: none; }
+  .busy .spin { display: inline-block; }
+  @keyframes s { to { transform: rotate(360deg); } }
+
+  .stats { display: none; margin-top: 16px; }
+  .stats.show { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .stat { text-align: center; padding: 10px 2px; }
+  .stat + .stat { border-left: .5px solid var(--sep); }
+  .stat b { display: block; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 11px; color: var(--muted); }
+  .stat.created b { color: var(--green); } .stat.new b { color: var(--blue); }
+  .stat.exists b { color: var(--orange); } .stat.error b { color: var(--red); }
+
+  #log { margin-top: 16px; max-height: 50vh; overflow: auto; background: var(--card); border-radius: 10px; }
+  #log:empty { display: none; }
+  .item { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 16px; position: relative; }
+  .item + .item::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
+  .item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .note { display: block; font-size: 12px; color: var(--muted); white-space: normal; }
+  .badge { flex-shrink: 0; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
+  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .badge.created { color: var(--green); } .badge.new { color: var(--blue); }
+  .badge.exists { color: var(--gray); } .badge.error { color: var(--red); }
+  .msg { padding: 12px 16px; font-size: 14px; color: var(--muted); }
+  .msg.err { color: var(--red); }
+
+  footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 14px; }
+
+  select { width: 100%; padding: 11px 16px; border: 0; outline: none; background: transparent; color: var(--text);
+    font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; -webkit-appearance: none; appearance: none; cursor: pointer; }
+  select option, select optgroup { background: var(--card); color: var(--text); }
+  select optgroup { color: var(--muted); font-weight: 600; }
+  .type + select { border-top: .5px solid var(--sep); }
+  .tabs { display: flex; gap: 2px; margin-top: 16px; padding: 2px; border-radius: 9px; background: var(--fill); }
+  .tab { height: 32px; border-radius: 7px; background: transparent; color: var(--text); font-weight: 500; font-size: 13px; }
+  .tab.active { background: var(--seg); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+  .pane[hidden] { display: none; }
+  .group select + select { border-top: .5px solid var(--sep); }
+  .link { background: none; border: 0; height: auto; padding: 0; flex: none; color: var(--blue); font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; text-transform: none; }
+
+  #am-list { max-height: 360px; overflow: auto; }
+  #am-list:empty { display: none; }
+  .am-row { display: flex; align-items: center; gap: 10px; padding: 9px 8px 9px 16px; position: relative; }
+  .am-row:not(:first-child)::before { content: ""; position: absolute; top: 0; left: 44px; right: 0; border-top: .5px solid var(--sep); }
+  #am-list input { width: 18px; height: 18px; margin: 0; accent-color: var(--blue); flex: none; cursor: pointer; }
+  .am-row > div { min-width: 0; flex: 1; cursor: pointer; }
+  .am-row b { display: block; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .am-row small { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .am-toggle { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 8px; background: transparent; position: relative; }
+  .am-toggle:hover { background: var(--fill); }
+  .am-toggle::after { content: ""; position: absolute; left: 11px; top: 12px; width: 7px; height: 7px; border: solid var(--muted);
+    border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
+  .am-toggle.open::after { transform: rotate(45deg); left: 12px; top: 10px; }
+  .am-values { padding: 0 0 6px 44px; }
+  .am-value { display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 0; font-size: 14px; cursor: pointer; }
+  .am-value span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .am-row.current b { color: var(--blue); }
+
+  select[hidden] { display: none; }
+  .picker-btn { width: 100%; height: auto; display: flex; justify-content: space-between; gap: 8px; padding: 11px 16px;
+    border-radius: 0; background: transparent; color: var(--text); font-weight: 400; text-align: left; }
+  .picker-btn:active:not(:disabled) { opacity: 1; background: var(--fill); }
+  .picker-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .picker-label.placeholder { color: var(--muted); }
+  .picker-chev { flex: none; width: 8px; height: 8px; margin: 4px 2px 0 0; border: solid var(--muted); border-width: 0 2px 2px 0;
+    transform: rotate(45deg); transition: transform .15s; }
+  .picker-btn[aria-expanded="true"] .picker-chev { transform: rotate(-135deg); margin-top: 8px; }
+  .picker-pop { border-top: .5px solid var(--sep); }
+  .picker-search { display: block; width: calc(100% - 24px); margin: 10px 12px 6px; padding: 8px 12px; border: 0; outline: none;
+    border-radius: 9px; background: var(--fill); color: var(--text); font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .picker-list { max-height: 300px; overflow: auto; padding-bottom: 6px; }
+  .picker-head { padding: 10px 16px 4px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
+  .picker-item { margin: 0 6px; padding: 8px 10px 8px 22px; border-radius: 7px; cursor: pointer; font-size: 14px; position: relative; }
+  .picker-item.active { background: var(--hover); }
+  .picker-item.selected { color: var(--blue); font-weight: 600; }
+  .picker-item.selected::before { content: ""; position: absolute; left: 8px; top: 50%; width: 6px; height: 6px; margin-top: -3px;
+    border-radius: 50%; background: var(--blue); }
+  .picker-empty { padding: 10px 16px 14px; color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+  <header>
+    <img src="icons/icon128.png" alt="">
+    <div>
+      <h1>Value List</h1>
+      <p>Bulk create · duplicates skipped</p>
+    </div>
+  </header>
+
+  <div class="group">
+    <div class="type"><span>List Type</span><b id="type">—</b></div>
+    <select id="emr-desc">
+      <option value="none">Description: None</option>
+      <option value="khmer">Description: Khmer term</option>
+      <option value="en">Description: English</option>
+      <option value="khmer-en">Description: Khmer - English</option>
+      <option value="code">Description: Code</option>
+    </select>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="sync">Sync all from EMR</button>
+    <button class="tab" role="tab" data-tab="single">One by one</button>
+  </div>
+
+  <section class="pane" data-pane="sync">
+    <div class="section-title">Matched lists <small id="am-count"></small></div>
+    <div class="group" id="am-list"></div>
+    <div class="footnote" id="am-info">Open a Value List page to match its lists with the EMR groups.</div>
+    <div class="actions">
+      <button id="am-run" class="primary" disabled><i class="spin"></i>Create all matched</button>
+    </div>
+  </section>
+
+  <section class="pane" data-pane="single">
+    <div class="section-title">EMR Standard <button id="emr-refresh" class="link" title="Re-scan every page of emr-doc.pmrs2.org and save">Refresh</button></div>
+    <div class="group">
+      <select id="emr-group"></select>
+    </div>
+    <div class="footnote" id="emr-info"></div>
+
+    <div class="section-title">Values <small id="count">0 values</small></div>
+    <div class="group">
+      <textarea id="values" spellcheck="false" placeholder="One value per line"></textarea>
+    </div>
+    <div class="footnote">Optional description: <code>Name | Description</code></div>
+
+    <div class="actions">
+      <button id="scan" class="secondary"><i class="spin"></i>Scan</button>
+      <button id="run" class="primary"><i class="spin"></i>Create</button>
+    </div>
+  </section>
+
+  <div class="stats group" id="stats">
+    <div class="stat created"><b id="s-created">0</b><span>Created</span></div>
+    <div class="stat new"><b id="s-new">0</b><span>New</span></div>
+    <div class="stat exists"><b id="s-exists">0</b><span>Skipped</span></div>
+    <div class="stat error"><b id="s-error">0</b><span>Errors</span></div>
+  </div>
+
+  <div id="log"></div>
+  <footer>Keep the tab open while creating</footer>
+  <script src="popup.js"></script>
+  <script src="emr-data.js"></script>
+  <script src="emr-scan.js"></script>
+  <script src="picker.js"></script>
+  <script src="emr.js"></script>
+  <script src="automatch.js"></script>
+  <script src="tabs.js"></script>
+</body>
+</html>
