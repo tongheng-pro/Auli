@@ -46,3 +46,10 @@
     save();
   });
 })();
+
+/* ---------- Settings › Creating: "done" toast with anime.gif and sound (both on by default) ---------- */
+[['done-toast', 'doneToast'], ['done-sound', 'doneSound']].forEach(([id, key]) => {
+  const box = document.getElementById(id);
+  chrome.storage.local.get(key, (v) => { box.checked = v[key] !== false; });
+  box.addEventListener('change', () => chrome.storage.local.set({ [key]: box.checked }));
+});

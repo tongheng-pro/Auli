@@ -106,6 +106,65 @@ function summarize(results, createMode) {
     ? t('summarize_done_detail', { exists: c.exists, wasWere: c.exists === 1 ? 'was' : 'were' })
     : '';
   notice('ok', doneTitle, doneDetail);
+  showDoneToast(doneTitle, doneDetail);
+  playDoneSound();
+}
+
+// After creating values, show a toast with anime.gif for 2 s
+const DONE_GIF = 'assets/anime.gif';
+const TOAST_MS = 2000;
+let toastTimer = null;
+let toastOn = true; // Settings › Creating, both on by default
+let soundOn = true;
+chrome.storage.local.get(['doneToast', 'doneSound'], (v) => { toastOn = v.doneToast !== false; soundOn = v.doneSound !== false; });
+chrome.storage.onChanged.addListener((c) => {
+  if (c.doneToast) toastOn = c.doneToast.newValue !== false;
+  if (c.doneSound) soundOn = c.doneSound.newValue !== false;
+});
+
+// Short two-note chime, made with Web Audio so no sound file is needed
+function playDoneSound() {
+  if (!soundOn) return;
+  try {
+    const ctx = new AudioContext();
+    [[659.25, 0], [987.77, 0.12]].forEach(([freq, at]) => { // E5, then B5
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const t0 = ctx.currentTime + at;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.5);
+    });
+    setTimeout(() => ctx.close(), 1000);
+  } catch {} // no audio device: stay silent
+}
+function showDoneToast(title, detail) {
+  if (!toastOn) return;
+  document.querySelector('.toast')?.remove();
+  clearTimeout(toastTimer);
+  const toast = Object.assign(document.createElement('div'), { className: 'toast' });
+  toast.setAttribute('role', 'status');
+  const close = () => { clearTimeout(toastTimer); toast.remove(); };
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    // new URL so the gif starts from its first frame
+    toast.append(Object.assign(document.createElement('img'), { src: DONE_GIF + '?t=' + Date.now(), alt: '' }));
+  }
+  const body = Object.assign(document.createElement('div'), { className: 'toast-body' });
+  const text = document.createElement('div');
+  text.append(Object.assign(document.createElement('b'), { textContent: title }));
+  if (detail) text.append(Object.assign(document.createElement('p'), { textContent: detail.trim() }));
+  const x = Object.assign(document.createElement('button'), { type: 'button', className: 'toast-close', textContent: '×' });
+  x.setAttribute('aria-label', 'Close');
+  x.addEventListener('click', close);
+  body.append(text, x);
+  toast.append(body);
+  document.body.append(toast);
+  toastTimer = setTimeout(close, TOAST_MS);
 }
 
 function addItem(x) {
