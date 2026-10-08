@@ -1,7 +1,15 @@
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
-const LABELS = { created: 'Created', new: 'New', exists: 'Already exists', error: 'Failed' };
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+const getLabel = (status) => {
+  const map = {
+    created: window.t ? t('lbl_created') : 'Created',
+    new: window.t ? t('lbl_new') : 'New',
+    exists: window.t ? t('lbl_exists') : 'Already exists',
+    error: window.t ? t('lbl_error') : 'Failed'
+  };
+  return map[status] || status;
+};
+const plural = (n, word) => (window.tPlural ? tPlural(n, word === 'value' ? 'plural_value' : 'plural_list') : `${n} ${word}${n === 1 ? '' : 's'}`);
 
 // Line in the results list. kind: true / 'err' = error, 'head' = list heading
 function msg(text, kind = false) {
@@ -36,8 +44,11 @@ function ask({ title, text = '', items = [], notes = [], ok = 'OK', danger = fal
     d.append(ul);
   }
   const row = Object.assign(document.createElement('div'), { className: 'ask-btns' });
-  const no = Object.assign(document.createElement('button'), { type: 'button', className: 'btn btn-secondary', textContent: 'Cancel' });
-  const yes = Object.assign(document.createElement('button'), { type: 'button', className: `btn ${danger ? 'btn-danger' : 'btn-primary'}`, textContent: ok });
+  const no = Object.assign(document.createElement('button'), { type: 'button', className: 'btn btn-secondary', textContent: window.t ? t('dlg_cancel') : 'Cancel' });
+  const okText = ok === 'Create' ? (window.t ? t('dlg_create') : 'Create')
+    : ok === 'Create all' ? (window.t ? t('dlg_create_all') : 'Create all')
+    : (window.t ? t('dlg_ok') : ok);
+  const yes = Object.assign(document.createElement('button'), { type: 'button', className: `btn ${danger ? 'btn-danger' : 'btn-primary'}`, textContent: okText });
   row.append(no, yes);
   d.append(row);
   document.body.append(d);
@@ -79,16 +90,22 @@ function summarize(results, createMode) {
   const c = { created: 0, new: 0, exists: 0, error: 0 };
   results.forEach((r) => (c[r.status] = (c[r.status] || 0) + 1));
   if (c.error) {
-    return notice('err', `${plural(c.error, 'value')} could not be created.`,
-      'The reason is shown under each failed value below. Fix it on the page or try again.');
+    return notice('err', t('summarize_err_title', { count: c.error, values: t('plural_values') }),
+      t('summarize_err_detail'));
   }
   if (!createMode) {
     return c.new
-      ? notice('info', `${plural(c.new, 'value')} will be created.`, ` ${c.exists} already ${c.exists === 1 ? 'exists' : 'exist'} and will be skipped. Click "Create values" to add them.`)
-      : notice('ok', 'Nothing to create.', ' All values already exist in this list.');
+      ? notice('info', t('summarize_check_new', { count: c.new, values: t('plural_values') }),
+          t('summarize_check_detail', { exists: c.exists, existsVerb: c.exists === 1 ? 'exists' : 'exist' }))
+      : notice('ok', t('summarize_check_none_title'), t('summarize_check_none_detail'));
   }
-  notice('ok', c.created ? `Done. ${plural(c.created, 'value')} created.` : 'Done. Nothing new to create.',
-    c.exists ? ` ${c.exists} already existed and ${c.exists === 1 ? 'was' : 'were'} skipped.` : '');
+  const doneTitle = c.created
+    ? t('summarize_done_title', { count: c.created, values: t('plural_values') })
+    : t('summarize_done_none_title');
+  const doneDetail = c.exists
+    ? t('summarize_done_detail', { exists: c.exists, wasWere: c.exists === 1 ? 'was' : 'were' })
+    : '';
+  notice('ok', doneTitle, doneDetail);
 }
 
 function addItem(x) {
@@ -106,7 +123,7 @@ function addItem(x) {
   }
   const badge = document.createElement('span');
   badge.className = 'badge ' + x.status;
-  badge.textContent = LABELS[x.status] || x.status;
+  badge.textContent = getLabel(x.status);
   row.append(name, badge);
   logEl.appendChild(row);
 }
@@ -140,6 +157,14 @@ function setBusy(btn, busy) {
 
 // Value List page on any host / install path, e.g. http://hospitals.test/backend/value-list?type=hospital
 // or https://my-hospital.org/hms/backend/value-list?type=… (not …/value-list/create)
+// URL type -> display name, e.g. "medchiefcomplain" -> "MedchiefComplain"
+const TYPE_WORDS = ['complain'];
+function formatType(type) {
+  let s = String(type || '');
+  for (const w of TYPE_WORDS) s = s.replace(new RegExp(w + '$', 'i'), w[0].toUpperCase() + w.slice(1));
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 function isValueListUrl(url) {
   try { return /\/value-list\/?$/.test(new URL(url).pathname); } catch { return false; }
 }
@@ -158,10 +183,9 @@ function getDelay() {
 }
 // "about 2 min" for n values (≈1.5 s per save + the wait)
 function estimate(n, delay) {
-  const sec = Math.ceil(n * (1.5 + delay));
-  return sec < 60 ? `about ${sec} s` : `about ${Math.ceil(sec / 60)} min`;
+  return window.tEstimate ? tEstimate(n, delay) : (Math.ceil(n * (1.5 + delay)) < 60 ? `about ${Math.ceil(n * (1.5 + delay))} s` : `about ${Math.ceil(Math.ceil(n * (1.5 + delay)) / 60)} min`);
 }
-const seconds = (d) => `${d} second${d === 1 ? '' : 's'}`;
+const seconds = (d) => (window.tSeconds ? tSeconds(d) : `${d} second${d === 1 ? '' : 's'}`);
 
 async function getTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -185,45 +209,52 @@ async function listName(tabId) {
   }
 }
 
-const NOT_VALUE_LIST = ['This tab is not a Value List page.',
-  ' In the hospital system go to Hospital › Value List, open a list, then try again.'];
-
 // Error next to the Values box
 function valuesError(text) {
   const help = $('values-help');
   $('values').classList.toggle('invalid', !!text);
   help.classList.toggle('err', !!text);
   if (text) help.textContent = text;
-  else help.innerHTML = 'Put each value on its own line. To add a description, use <code>Name | Description</code>.';
+  else help.innerHTML = window.t ? t('values_help') : 'Put each value on its own line. To add a description, use <code>Name | Description</code>.';
 }
 
 async function start(createMode, btn) {
   const items = parseInput($('values').value);
   clearResults();
   if (!items.length) {
-    valuesError('Enter at least one value, one per line, or pick an EMR group above.');
+    valuesError(window.t ? t('val_err_empty') : 'Enter at least one value, one per line, or pick an EMR group above.');
     $('values').focus();
     return;
   }
 
   const tab = await getTab();
-  if (!tab || !isValueListUrl(tab.url)) return notice('err', ...NOT_VALUE_LIST);
+  if (!tab || !isValueListUrl(tab.url)) {
+    return notice('err', window.t ? t('not_val_page_title') : 'This tab is not a Value List page.',
+      ' ' + (window.t ? t('not_val_page_detail') : 'In the hospital system go to Hospital › Value List, open a list, then try again.'));
+  }
 
   const delay = await getDelay();
   if (createMode) {
     const name = await listName(tab.id);
     if (!await ask({
-      title: `Create ${plural(items.length, 'value')}?`,
+      title: window.t ? t('create_values_ask', { count: items.length, values: t('plural_values') }) : `Create ${plural(items.length, 'value')}?`,
       items: [[name, plural(items.length, 'value')]],
-      notes: ['Values that already exist will be skipped.',
-        `Waits ${seconds(delay)} between values (${estimate(items.length, delay)} in total).`],
+      notes: [
+        window.t ? t('note_skip_exist') : 'Values that already exist will be skipped.',
+        window.t ? t('note_wait_delay', { delay: seconds(delay), estimate: estimate(items.length, delay) }) : `Waits ${seconds(delay)} between values (${estimate(items.length, delay)} in total).`
+      ],
       ok: 'Create',
     })) return;
   }
 
   setBusy(btn, true);
-  notice('busy', createMode ? `Creating ${plural(items.length, 'value')}…` : 'Checking existing values…',
-    createMode ? ` Waiting ${seconds(delay)} between values. Keep this tab open until it finishes.` : '');
+  const busyTitle = createMode
+    ? (window.t ? t('creating_values_busy', { count: items.length, values: t('plural_values') }) : `Creating ${plural(items.length, 'value')}…`)
+    : (window.t ? t('checking_values_busy') : 'Checking existing values…');
+  const busyDetail = createMode
+    ? ' ' + (window.t ? t('waiting_delay_busy', { delay: seconds(delay) }) : `Waiting ${seconds(delay)} between values. Keep this tab open until it finishes.`)
+    : '';
+  notice('busy', busyTitle, busyDetail);
 
   try {
     const [res] = await chrome.scripting.executeScript({
@@ -233,42 +264,47 @@ async function start(createMode, btn) {
       args: [items, createMode, delay],
     });
     const r = res.result;
-    if (r.error) return notice('err', 'The page is not ready.', ` ${r.error} Reload the page and try again.`);
-    $('type').textContent = 'Value List · ' + r.type;
+    if (r.error) return notice('err', window.t ? t('page_not_ready') : 'The page is not ready.', ` ${window.t ? t('page_reload_retry', { error: r.error }) : `${r.error} Reload the page and try again.`}`);
+    $('type').textContent = 'Value List · ' + formatType(r.type);
     setStats(r.results);
     r.results.forEach(addItem);
     summarize(r.results, createMode);
   } catch (e) {
-    notice('err', 'Could not work with this page.', ` ${e.message}. Reload the page and try again.`);
+    notice('err', window.t ? t('page_could_not_work') : 'Could not work with this page.', ` ${e.message}.`);
   } finally {
     setBusy(btn, false);
   }
 }
 
 // live value counter
-$('values').addEventListener('input', () => {
+function updateValueCount() {
   const n = parseInput($('values').value).length;
   $('count').textContent = plural(n, 'value');
   if (n) valuesError('');
-});
+}
+$('values').addEventListener('input', updateValueCount);
 
 // show current page (side panel stays open, so refresh on tab switch / navigation)
 async function showType() {
   const tab = await getTab();
-  const t = $('type');
+  const tEl = $('type');
   let ok = false;
   try {
     const u = new URL(tab.url);
     ok = isValueListUrl(tab.url);
-    if (ok) t.textContent = 'Value List · ' + (u.searchParams.get('type') || 'value-list');
+    if (ok) tEl.textContent = 'Value List · ' + formatType(u.searchParams.get('type') || 'value-list');
   } catch {}
-  if (!ok) t.textContent = 'Not a Value List page';
+  if (!ok) tEl.textContent = window.t ? t('page_not_valuelist') : 'Not a Value List page';
   $('page-status').classList.toggle('bad', !ok);
-  $('page-hint').textContent = ok ? '' : 'Go to Hospital › Value List in the hospital system and open a list.';
+  $('page-hint').textContent = ok ? '' : (window.t ? t('page_hint_bad') : 'Go to Hospital › Value List in the hospital system and open a list.');
 }
 showType();
 chrome.tabs.onActivated.addListener(showType);
 chrome.tabs.onUpdated.addListener((id, info, tab) => { if (tab.active && info.url) showType(); });
+document.addEventListener('lang-changed', () => {
+  showType();
+  updateValueCount();
+});
 
 $('scan').addEventListener('click', (e) => start(false, e.currentTarget));
 $('run').addEventListener('click', (e) => start(true, e.currentTarget));

@@ -16,7 +16,7 @@
   function renderGroups() {
     document.dispatchEvent(new Event('emr-data')); // let Auto Match re-match
     const keep = groupSel.value;
-    groupSel.innerHTML = '<option value="">Choose a group to fill the values below</option>';
+    groupSel.innerHTML = `<option value="">${window.t ? t('emr_choose_placeholder') : 'Choose a group to fill the values below'}</option>`;
     let og = null, last = '';
     data.groups.forEach((g, i) => {
       const label = g.page === g.section ? g.page : `${g.page} › ${g.section}`;
@@ -34,16 +34,23 @@
     groupSel.value = keep;
     info.classList.remove('err');
     info.textContent = summary();
+    groupSel.dispatchEvent(new Event('sync'));
   }
 
   // "35 groups, 170 values. Imported from my-emr.csv on 2026-10-08."
   function summary() {
     const values = data.groups.reduce((n, g) => n + g.items.length, 0);
-    const from = data.source === 'import' ? `Imported from ${data.file || 'a file'} on ${data.scannedAt}`
-      : data.source === 'sheet' ? `Synced from Google Sheet, last change ${data.syncedAt || data.scannedAt}`
-      : data.source === 'website' || (data !== EMR_DEFAULT && !data.source) ? `Downloaded from emr-doc.pmrs2.org on ${data.scannedAt}`
-      : `Built-in values from ${data.scannedAt}`;
-    return `${data.groups.length} groups, ${values} values. ${from}.`;
+    let from;
+    if (data.source === 'import') {
+      from = window.t ? t('emr_from_import', { file: data.file || 'a file', date: data.scannedAt }) : `Imported from ${data.file || 'a file'} on ${data.scannedAt}`;
+    } else if (data.source === 'sheet') {
+      from = window.t ? t('emr_from_sheet', { date: data.syncedAt || data.scannedAt }) : `Synced from Google Sheet, last change ${data.syncedAt || data.scannedAt}`;
+    } else if (data.source === 'website' || (data !== EMR_DEFAULT && !data.source)) {
+      from = window.t ? t('emr_from_web', { date: data.scannedAt }) : `Downloaded from emr-doc.pmrs2.org on ${data.scannedAt}`;
+    } else {
+      from = window.t ? t('emr_from_builtin', { date: data.scannedAt }) : `Built-in values from ${data.scannedAt}`;
+    }
+    return window.t ? t('emr_summary_tmpl', { groups: data.groups.length, values, from }) : `${data.groups.length} groups, ${values} values. ${from}.`;
   }
 
   // Replace all EMR data (import / website) and save it in the extension
@@ -89,14 +96,14 @@
   async function refresh() {
     refreshBtn.disabled = true;
     info.classList.remove('err');
-    info.textContent = 'Downloading the latest values from emr-doc.pmrs2.org…';
+    info.textContent = window.t ? t('emr_downloading') : 'Downloading the latest values from emr-doc.pmrs2.org…';
     try {
       const groups = await emrScanSite(EMR_SOURCE_URL);
       if (!groups.length) throw new Error('No value tables found');
       await setData(groups, { source: 'website' });
     } catch (e) {
       info.classList.add('err');
-      info.textContent = `Could not update EMR data (${e.message}). Check your internet connection and try again. The saved values are still used.`;
+      info.textContent = window.t ? t('emr_download_err', { error: e.message }) : `Could not update EMR data (${e.message}). Check your internet connection and try again. The saved values are still used.`;
       throw e;
     } finally {
       refreshBtn.disabled = false;
@@ -121,6 +128,7 @@
     document.dispatchEvent(new Event('emr-data')); // names may change: let Auto Match re-match
   });
   refreshBtn.addEventListener('click', () => refresh().catch(() => {}));
+  document.addEventListener('lang-changed', () => renderGroups());
 
   (async () => {
     const saved = await store.get('emrData');

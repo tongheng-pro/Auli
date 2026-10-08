@@ -35,10 +35,17 @@
     document.body.classList.toggle('settings-open', open);
     settings.hidden = !open;
     gear.setAttribute('aria-pressed', open);
-    gear.setAttribute('aria-label', open ? 'Close settings' : 'Settings');
+    const label = open ? (window.t ? t('settings_btn_close') : 'Close settings') : (window.t ? t('settings_btn_aria') : 'Settings');
+    gear.setAttribute('aria-label', label);
     window.scrollTo(0, 0);
     (open ? document.getElementById('close-settings') : gear).focus();
   }
+  document.addEventListener('lang-changed', () => {
+    if (gear) {
+      const open = !settings.hidden;
+      gear.setAttribute('aria-label', open ? (window.t ? t('settings_btn_close') : 'Close settings') : (window.t ? t('settings_btn_aria') : 'Settings'));
+    }
+  });
   gear.addEventListener('click', () => setSettings(settings.hidden));
   document.getElementById('close-settings').addEventListener('click', () => setSettings(false));
   document.addEventListener('keydown', (e) => {

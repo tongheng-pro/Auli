@@ -15,13 +15,16 @@
     document.documentElement.classList.toggle('is-dark', isDark()); // picks the sun / moon icon
     const btn = document.getElementById('theme');
     if (btn) {
-      const label = isDark() ? 'Switch to light mode' : 'Switch to dark mode';
+      const label = isDark()
+        ? (window.t ? t('theme_btn_light') : 'Switch to light mode')
+        : (window.t ? t('theme_btn_dark') : 'Switch to dark mode');
       btn.setAttribute('aria-label', label);
       btn.title = label;
     }
   }
   apply();
   media.addEventListener('change', apply); // system changed (only matters while not chosen)
+  document.addEventListener('lang-changed', apply);
 
   document.addEventListener('DOMContentLoaded', () => {
     apply();

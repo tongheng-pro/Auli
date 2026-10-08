@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Auli</title>
 <script src="theme.js"></script>
+<script src="i18n.js"></script>
 <style>
-  /* Poppins (bundled, SIL Open Font License). Khmer text falls back to the system Khmer font. */
+  /* Poppins (bundled, SIL Open Font License). */
   @font-face { font-family: "Poppins"; font-style: normal; font-weight: 400; font-display: swap;
     src: url("fonts/poppins-400.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
   @font-face { font-family: "Poppins"; font-style: normal; font-weight: 500; font-display: swap;
@@ -15,6 +16,14 @@
     src: url("fonts/poppins-600.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
   @font-face { font-family: "Poppins"; font-style: normal; font-weight: 700; font-display: swap;
     src: url("fonts/poppins-700.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+  /* Kantumruy Pro & Kantumruy (bundled for Khmer, SIL Open Font License). */
+  @font-face { font-family: "Kantumruy Pro"; font-style: normal; font-weight: 100 900; font-display: swap;
+    src: url("fonts/kantumruy-pro-khmer.woff2") format("woff2"); unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC; }
+  @font-face { font-family: "Kantumruy"; font-style: normal; font-weight: 400; font-display: swap;
+    src: url("fonts/kantumruy-400.woff2") format("woff2"); }
+  @font-face { font-family: "Kantumruy"; font-style: normal; font-weight: 700; font-display: swap;
+    src: url("fonts/kantumruy-700.woff2") format("woff2"); }
   :root {
     color-scheme: light;
     --bg: #F3F4F6; --card: #FFFFFF; --text: #16191F; --muted: #565C66; --border: #D5D9DE; --line: #E7E9EC; --subtle: #FAFBFC;
@@ -25,7 +34,7 @@
     --disabled: #E3E6EA; --disabled-text: #8A9099; --shadow: rgba(0,0,0,.08);
     --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23565C66' stroke-width='1.6'/%3E%3C/svg%3E");
     --radius: 8px;
-    --font: "Poppins", "Noto Sans Khmer", "Khmer OS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --font: "Poppins", "Kantumruy Pro", "Kantumruy", "Noto Sans Khmer", "Khmer OS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   /* Dark: follows the system unless the user picked Light / Dark in the footer */
   @media (prefers-color-scheme: dark) {
@@ -55,6 +64,16 @@
   body { min-width: 300px; margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); }
   [hidden] { display: none !important; }
   :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Language toggle button and badge */
+  .lang-btn { position: relative; }
+  .lang-tag { position: absolute; right: 2px; bottom: 2px; font-size: 8px; font-weight: 700; line-height: 1;
+    padding: 1px 2px; border-radius: 3px; background: var(--card); color: var(--accent);
+    border: 1px solid var(--border); pointer-events: none; letter-spacing: -0.2px; }
+  html[lang="km"] body {
+    font-family: "Kantumruy Pro", "Kantumruy", "Poppins", "Noto Sans Khmer", "Khmer OS Siemreap", "Khmer OS", system-ui, -apple-system, sans-serif;
+  }
+  html[lang="km"] .tab { font-size: 13px; }
 
   /* ---- Header ---- */
   .app-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--border); }
@@ -101,7 +120,7 @@
   .page-status.bad .dot { background: #A66300; }
   .page-status.bad .dot::before { content: "!"; }
   .page-status .label { font-size: 12px; color: var(--muted); }
-  .page-status b { display: block; font-weight: 600; word-break: break-word; }
+  .page-status b { display: block; font-weight: 600; word-break: break-word; color: var(--accent); }
   .page-status.bad b { color: var(--warn); }
   .page-status .hint { margin-top: 2px; font-size: 12px; color: var(--muted); }
 
@@ -303,11 +322,22 @@
   <header class="app-header">
     <img src="icons/icon128.png" alt="">
     <div>
-      <h1>Auli</h1>
-      <p>Add values to hospital Value Lists in bulk. Existing values are skipped.</p>
+      <h1 data-i18n="app_title">Auli</h1>
+      <p data-i18n="app_desc">Add values to hospital Value Lists in bulk. Existing values are skipped.</p>
     </div>
     <div class="header-actions">
-      <button id="open-settings" class="icon-btn" aria-label="Settings" title="Settings: speed, EMR data" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button id="lang" class="icon-btn lang-btn" type="button" aria-label="Switch to Khmer (ប្តូរជាភាសាខ្មែរ)" title="Switch to Khmer (ប្តូរជាភាសាខ្មែរ)">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="m5 8 6 6"/>
+          <path d="m4 14 6-6 2-3"/>
+          <path d="M2 5h12"/>
+          <path d="M7 2h1"/>
+          <path d="m22 22-5-10-5 10"/>
+          <path d="M14 18h6"/>
+        </svg>
+        <span class="lang-tag" aria-hidden="true">EN</span>
+      </button>
+      <button id="open-settings" class="icon-btn" aria-label="Settings" title="Settings: speed, EMR data" aria-pressed="false" data-i18n-title="settings_btn_title" data-i18n-aria-label="settings_btn_aria"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
       <button id="theme" class="icon-btn" aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
     </div>
   </header>
@@ -317,8 +347,8 @@
     <div class="card page-status bad" id="page-status" role="status">
       <span class="dot" aria-hidden="true"></span>
       <div>
-        <div class="label">Current page</div>
-        <b id="type">Checking…</b>
+        <div class="label" data-i18n="page_status_label">Current page</div>
+        <b id="type" data-i18n="page_checking">Checking…</b>
         <div class="hint" id="page-hint"></div>
       </div>
     </div>
@@ -326,183 +356,191 @@
     <!-- Shared setting -->
     <div class="card">
       <div class="field">
-        <label class="field-label" for="emr-desc">Name / description for EMR values</label>
+        <label class="field-label" for="emr-desc" data-i18n="emr_desc_label">Name / description for EMR values</label>
         <select id="emr-desc">
-          <option value="none">English name only</option>
-          <option value="khmer">Khmer name only</option>
-          <option value="en">English name | English description</option>
-          <option value="khmer-en">English name | Khmer - English description</option>
-          <option value="code">English name | Code</option>
+          <option value="none" data-i18n="opt_desc_none">English name only</option>
+          <option value="khmer" data-i18n="opt_desc_khmer">Khmer name only</option>
+          <option value="en" data-i18n="opt_desc_en">English name | English description</option>
+          <option value="khmer-en" data-i18n="opt_desc_khmer_en">English name | Khmer - English description</option>
+          <option value="code" data-i18n="opt_desc_code">English name | Code</option>
         </select>
       </div>
     </div>
 
     <div class="tabs" role="tablist" aria-label="Mode">
-      <button class="tab" role="tab" id="tab-sync" aria-controls="pane-sync" data-tab="sync">Sync all</button>
-      <button class="tab" role="tab" id="tab-single" aria-controls="pane-single" data-tab="single">One by one</button>
+      <button class="tab" role="tab" id="tab-sync" aria-controls="pane-sync" data-tab="sync" data-i18n="tab_sync">Sync all</button>
+      <button class="tab" role="tab" id="tab-single" aria-controls="pane-single" data-tab="single" data-i18n="tab_single">One by one</button>
     </div>
 
     <!-- Mode 1: sync every matched list -->
     <section class="pane" id="pane-sync" role="tabpanel" aria-labelledby="tab-sync" data-pane="sync">
-      <p class="pane-intro">Fill every list on this page from the EMR standard. Lists with the same name as an EMR group are found automatically. Untick anything you don't want, then create.</p>
+      <p class="pane-intro" data-i18n="sync_intro">Fill every list on this page from the EMR standard. Lists with the same name as an EMR group are found automatically. Untick anything you don't want, then create.</p>
       <div class="section-head">
-        <h2>Matched lists</h2>
+        <h2 data-i18n="matched_lists">Matched lists</h2>
         <div class="links">
           <small id="am-count"></small>
-          <button id="am-all" class="link" type="button" hidden>Uncheck all</button>
+          <button id="am-all" class="link" type="button" hidden data-i18n="uncheck_all">Uncheck all</button>
         </div>
       </div>
       <div class="card" id="am-list"></div>
-      <div class="empty" id="am-info">Open a Value List page to find lists that match the EMR groups.</div>
+      <div class="empty" id="am-info" data-i18n="sync_empty_info">Open a Value List page to find lists that match the EMR groups.</div>
       <div class="actions">
-        <button id="am-run" class="btn btn-primary btn-block" disabled><i class="spin"></i>Create all matched</button>
+        <button id="am-run" class="btn btn-primary btn-block" disabled><i class="spin"></i><span data-i18n="sync_btn_create">Create all matched</span></button>
       </div>
     </section>
 
     <!-- Mode 2: one list -->
     <section class="pane" id="pane-single" role="tabpanel" aria-labelledby="tab-single" data-pane="single">
-      <p class="pane-intro">Add values to the list that is open in this tab.</p>
+      <p class="pane-intro" data-i18n="single_intro">Add values to the list that is open in this tab.</p>
       <div class="card">
         <div class="field">
           <div class="field-label">
-            <span id="emr-group-label">1. EMR group <small>(optional)</small></span>
-            <button id="emr-refresh" class="link" title="Download the latest values from emr-doc.pmrs2.org">Update EMR data</button>
+            <span id="emr-group-label"><span data-i18n="emr_group_label">1. EMR group</span> <small data-i18n="optional">(optional)</small></span>
+            <button id="emr-refresh" hidden class="link" data-i18n="emr_update_link" data-i18n-title="emr_update_title" title="Download the latest values from emr-doc.pmrs2.org">Update EMR data</button>
           </div>
           <select id="emr-group" aria-labelledby="emr-group-label"></select>
           <p class="help" id="emr-info"></p>
         </div>
         <div class="field">
-          <label class="field-label" for="values">2. Values <small id="count">0 values</small></label>
-          <textarea id="values" spellcheck="false" aria-describedby="values-help" placeholder="One value per line, for example:&#10;Fever&#10;Headache | Pain in the head"></textarea>
-          <p class="help" id="values-help">Put each value on its own line. To add a description, use <code>Name | Description</code>.</p>
+          <label class="field-label" for="values"><span data-i18n="values_label">2. Values</span> <small id="count">0 values</small></label>
+          <textarea id="values" spellcheck="false" aria-describedby="values-help" data-i18n-placeholder="values_placeholder" placeholder="One value per line, for example:&#10;Fever&#10;Headache | Pain in the head"></textarea>
+          <p class="help" id="values-help" data-i18n-html="values_help">Put each value on its own line. To add a description, use <code>Name | Description</code>.</p>
         </div>
       </div>
       <div class="actions btn-row">
-        <button id="scan" class="btn btn-secondary" title="See which values are new, without creating anything"><i class="spin"></i>Check</button>
-        <button id="run" class="btn btn-primary"><i class="spin"></i>Create values</button>
+        <button id="scan" class="btn btn-secondary" data-i18n-title="btn_check_title" title="See which values are new, without creating anything"><i class="spin"></i><span data-i18n="btn_check">Check</span></button>
+        <button id="run" class="btn btn-primary"><i class="spin"></i><span data-i18n="btn_create">Create values</span></button>
       </div>
     </section>
 
     <!-- Settings (gear): manage the EMR data (export / edit / import) -->
     <section id="pane-data" aria-labelledby="settings-title" hidden>
       <div class="settings-bar">
-        <button id="close-settings" class="back-btn" title="Back to Sync all / One by one">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back
+        <button id="close-settings" class="back-btn" data-i18n-title="back_btn_title" title="Back to Sync all / One by one">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg><span data-i18n="back_btn">Back</span>
         </button>
-        <h2 id="settings-title">Settings</h2>
+        <h2 id="settings-title" data-i18n="settings_title">Settings</h2>
       </div>
 
-      <h3 class="settings-section">Creating</h3>
+      <h3 class="settings-section" data-i18n="settings_general">General</h3>
       <div class="card field">
-        <label class="field-label" for="create-delay">Wait between values</label>
+        <label class="field-label" for="setting-lang" data-i18n="setting_lang_label">Language / ភាសា</label>
+        <select id="setting-lang">
+          <option value="en">English</option>
+          <option value="km">ភាសាខ្មែរ (Khmer)</option>
+        </select>
+      </div>
+
+      <h3 class="settings-section" data-i18n="settings_creating">Creating</h3>
+      <div class="card field">
+        <label class="field-label" for="create-delay" data-i18n="wait_between_values">Wait between values</label>
         <div class="delay-row">
           <input type="number" id="create-delay" min="2" max="60" step="0.5" inputmode="decimal" aria-describedby="delay-help">
-          <span>seconds</span>
+          <span data-i18n="seconds_unit">seconds</span>
         </div>
-        <p class="help" id="delay-help">Pause after each value is created, and between lists in "Sync all". Minimum and default: 2 seconds, which keeps Auli under the hospital system's rate limit. Increase it if you see "Too many requests" or values fail to save. Maximum 60.</p>
+        <p class="help" id="delay-help" data-i18n="delay_help">Pause after each value is created, and between lists in "Sync all". Minimum and default: 2 seconds, which keeps Auli under the hospital system's rate limit. Increase it if you see "Too many requests" or values fail to save. Maximum 60.</p>
       </div>
 
-      <h3 class="settings-section">EMR data</h3>
-      <p class="pane-intro">The EMR values used by "Sync all" and "One by one". Export them, edit or add values in Excel, then import the file back.</p>
+      <h3 class="settings-section" data-i18n="settings_emr_data">EMR data</h3>
+      <p class="pane-intro" data-i18n="emr_data_intro">The EMR values used by "Sync all" and "One by one". Export them, edit or add values in Excel, then import the file back.</p>
 
       <div class="card field">
-        <div class="field-label">Current data</div>
+        <div class="field-label" data-i18n="current_data_label">Current data</div>
         <p class="io-summary" id="io-summary"></p>
       </div>
 
       <div class="card io-actions">
         <div class="io-row">
           <div>
-            <b>1. Export</b>
-            <p class="help">Download the current values to edit them.</p>
+            <b data-i18n="io_export_head">1. Export</b>
+            <p class="help" data-i18n="io_export_help">Download the current values to edit them.</p>
           </div>
           <div class="io-btns">
-            <button id="io-export-csv" class="btn btn-secondary btn-sm" title="Opens in Excel or Google Sheets">Export CSV</button>
-            <button id="io-export-json" class="btn btn-secondary btn-sm" title="For developers / backups">JSON</button>
+            <button id="io-export-csv" class="btn btn-secondary btn-sm" data-i18n="io_export_csv" data-i18n-title="io_export_csv_title" title="Opens in Excel or Google Sheets">Export CSV</button>
+            <button id="io-export-json" class="btn btn-secondary btn-sm" data-i18n="io_export_json" data-i18n-title="io_export_json_title" title="For developers / backups">JSON</button>
           </div>
         </div>
         <div class="io-row">
           <div>
-            <b>2. Import</b>
-            <p class="help">Choose your edited .csv or .json file. It replaces the current values.</p>
+            <b data-i18n="io_import_head">2. Import</b>
+            <p class="help" data-i18n="io_import_help">Choose your edited .csv or .json file. It replaces the current values.</p>
           </div>
           <div class="io-btns">
-            <button id="io-import" class="btn btn-primary btn-sm">Import file…</button>
+            <button id="io-import" class="btn btn-primary btn-sm" data-i18n="io_import_btn">Import file…</button>
             <input type="file" id="io-file" accept=".csv,.json,text/csv,application/json" hidden>
           </div>
         </div>
       </div>
 
       <div class="card field io-actions">
-        <label class="field-label" for="sheet-url">Team Google Sheet <small>edit together, sync live</small></label>
+        <label class="field-label" for="sheet-url" data-i18n-html="sheet_label">Team Google Sheet <small>edit together, sync live</small></label>
         <div class="sheet-row">
           <input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" spellcheck="false" aria-describedby="sheet-status">
-          <button id="sheet-sync" class="btn btn-primary btn-sm"><i class="spin"></i>Sync now</button>
+          <button id="sheet-sync" class="btn btn-primary btn-sm"><i class="spin"></i><span data-i18n="sheet_sync_btn">Sync now</span></button>
         </div>
-        <label class="sheet-auto"><input type="checkbox" id="sheet-auto">Keep in sync (checks every 30 seconds while Auli is open)</label>
-        <p class="help" id="sheet-status" aria-live="polite">Same columns as the CSV export. Share the sheet as <b>Anyone with the link: Viewer</b>, then paste its link.</p>
+        <label class="sheet-auto"><input type="checkbox" id="sheet-auto"><span data-i18n="sheet_auto_label">Keep in sync (checks every 30 seconds while Auli is open)</span></label>
+        <p class="help" id="sheet-status" aria-live="polite" data-i18n-html="sheet_status_help">Same columns as the CSV export. Share the sheet as <b>Anyone with the link: Viewer</b>, then paste its link.</p>
       </div>
 
       <div id="io-status" hidden></div>
 
       <details class="card guide" open>
-        <summary>How to edit EMR data</summary>
+        <summary data-i18n="guide_summary">How to edit EMR data</summary>
         <ol>
-          <li>Click <b>Export CSV</b> and open the file in Excel or Google Sheets.</li>
-          <li>Edit it. <b>One row = one value.</b> Rows with the same <code>group</code> belong together.
+          <li><span data-i18n-html="guide_step1">Click <b>Export CSV</b> and open the file in Excel or Google Sheets.</span></li>
+          <li><span data-i18n-html="guide_step2">Edit it. <b>One row = one value.</b> Rows with the same <code>group</code>, <code>page</code> and <code>section</code> form one list.</span>
             <ul>
-              <li><b>Change</b> a value: edit the cell.</li>
-              <li><b>Add a value</b>: add a row and type the existing group name exactly.</li>
-              <li><b>Add a group</b>: add rows with a new group name.</li>
-              <li><b>Remove</b> a value: delete its row.</li>
+              <li><span data-i18n-html="guide_step2_change"><b>Change</b> a value: edit the cell.</span></li>
+              <li><span data-i18n-html="guide_step2_add_val"><b>Add a value</b>: add a row and copy the group, page and section from a row of that list.</span></li>
+              <li><span data-i18n-html="guide_step2_add_grp"><b>Add a group</b>: add rows with a new group name.</span></li>
+              <li><span data-i18n-html="guide_step2_del_val"><b>Remove</b> a value: delete its row. Duplicate names in the same list (ignoring capitals) are skipped.</span></li>
             </ul>
           </li>
-          <li>Save as <b>CSV UTF-8</b> (Excel: File › Save As › "CSV UTF-8"), so Khmer text is kept.</li>
-          <li>Click <b>Import file…</b> and choose it. If something is wrong, you'll see the row number. Nothing changes until the file is correct.</li>
+          <li><span data-i18n-html="guide_step3">Save as <b>CSV UTF-8</b> (Excel: File › Save As › "CSV UTF-8"), so Khmer text is kept. Files that use <code>;</code> instead of <code>,</code> also work.</span></li>
+          <li><span data-i18n-html="guide_step4">Click <b>Import file…</b>, choose it and confirm. It <b>replaces all current EMR data</b>, so export first if you want a backup. If something is wrong, you'll see the row number and nothing changes.</span></li>
         </ol>
         <table class="cols">
-          <caption>Columns</caption>
-          <tr><th>group</th><td><b>Required.</b> Group name. Use the same name as the list in the hospital system (e.g. <i>Birth Control Type</i>) so "Sync all" can match it.</td></tr>
-          <tr><th>code</th><td>Code (optional; e.g. <i>OBVA-S000099</i>).</td></tr>
-          <tr><th>english</th><td><b>Required.</b> English name of the value (e.g. <i>Combined Oral Contraceptive (COC)</i>).</td></tr>
-          <tr><th>khmer</th><td>Khmer name (optional; e.g. <i>ថ្នាំគ្រាប់ស៊ីអូស៊ី</i>). Created instead of the English name when "Khmer name only" is chosen.</td></tr>
-          <tr><th>description</th><td>Longer English description (optional).</td></tr>
-          <tr><th>page, section</th><td>Only for grouping in the group picker (optional; "Custom" if empty).</td></tr>
+          <caption data-i18n="cols_caption">Columns</caption>
+          <tr><th>group</th><td data-i18n-html="col_group_desc"><b>Required.</b> Group name. Use the same name as the list in the hospital system (e.g. <i>Birth Control Type</i>) so "Sync all" can match it.</td></tr>
+          <tr><th>code</th><td data-i18n-html="col_code_desc">Code (optional; e.g. <i>OBVA-S000099</i>). If empty, the English name is used.</td></tr>
+          <tr><th>english</th><td data-i18n-html="col_english_desc"><b>Required.</b> English name of the value (e.g. <i>Combined Oral Contraceptive (COC)</i>).</td></tr>
+          <tr><th>khmer</th><td data-i18n-html="col_khmer_desc">Khmer name (optional; e.g. <i>ថ្នាំគ្រាប់ស៊ីអូស៊ី</i>). Created instead of the English name when "Khmer name only" is chosen.</td></tr>
+          <tr><th>description</th><td data-i18n-html="col_desc_desc">Longer English description (optional).</td></tr>
+          <tr><th>page, section</th><td data-i18n-html="col_page_desc">Groups lists in the group picker (optional; "Custom" if empty). The same group name under a different page or section becomes a separate list.</td></tr>
         </table>
-        <p class="help"><b>Team Google Sheet:</b> in Google Sheets, File › Import › upload the exported CSV. Click Share › General access › <b>Anyone with the link</b> (Viewer). Paste the sheet link above and turn on <b>Keep in sync</b>. Your team edits the sheet; Auli picks up changes within 30 seconds. Use the tab the link points to (the <code>#gid=</code> part). If a row has a problem, the current data is kept until it is fixed.</p>
-        <p class="help">Example:</p>
+        <p class="help" data-i18n-html="guide_team_sheet"><b>Team Google Sheet:</b> in Google Sheets, File › Import › upload the exported CSV. Click Share › General access › <b>Anyone with the link</b> (Viewer), or use File › Share › Publish to web. Paste the sheet link above and turn on <b>Keep in sync</b>. Your team edits the sheet; while Auli is open it picks up changes within 30 seconds. Use the tab the link points to (the <code>#gid=</code> part). If a row has a problem, the current data is kept until it is fixed. Importing a file or resetting turns <b>Keep in sync</b> off.</p>
+        <p class="help"><span data-i18n="guide_example">Example:</span></p>
         <pre>group,code,english,khmer
 Birth Control Type,OBVA-S000099,Combined Oral Contraceptive (COC),ថ្នាំគ្រាប់ស៊ីអូស៊ី
-Birth Control Type,,Condom,ស្រោមអនាម័យ
 My New List,,First value,</pre>
-        <p class="help">Whether the English or Khmer name is created, and which description, is set by "Name / description for EMR values" on the main screen. To undo all changes, use <b>Reset to built-in data</b>.</p>
+        <p class="help" data-i18n-html="guide_setting_note">Whether the English or Khmer name is created, and which description, is set by "Name / description for EMR values" on the main screen. To undo all changes, use <b>Reset to built-in data</b>.</p>
       </details>
 
       <div class="io-more">
-        <button id="io-update" class="btn btn-secondary btn-sm" title="Replaces the current data with the latest values from emr-doc.pmrs2.org"><i class="spin"></i>Update from emr-doc website</button>
-        <button id="io-reset" class="btn btn-danger btn-sm" title="Remove imported or downloaded changes">Reset to built-in data</button>
+        <button id="io-update" hidden class="btn btn-secondary btn-sm" data-i18n-title="io_update_title" title="Replaces the current data with the latest values from emr-doc.pmrs2.org"><i class="spin"></i><span data-i18n="io_update_btn">Update from emr-doc website</span></button>
+        <button id="io-reset" class="btn btn-danger btn-sm" data-i18n-title="io_reset_title" data-i18n="io_reset_btn" title="Remove imported or downloaded changes">Reset to built-in data</button>
       </div>
     </section>
 
     <!-- Results (both modes) -->
     <section class="results">
       <div class="section-head results-head" id="results-head" hidden>
-        <h2>Results</h2>
-        <button id="clear" class="btn btn-danger btn-sm" title="Clear the results and the Values box to start again">Clear</button>
+        <h2 data-i18n="results_head">Results</h2>
+        <button id="clear" class="btn btn-danger btn-sm" data-i18n-title="clear_btn_title" data-i18n="clear_btn" title="Clear the results and the Values box to start again">Clear</button>
       </div>
       <div aria-live="polite"><div id="notice" hidden></div></div>
       <div class="card stats" id="stats">
-        <div class="stat created"><b id="s-created">0</b><span>Created</span></div>
-        <div class="stat new"><b id="s-new">0</b><span>New</span></div>
-        <div class="stat exists"><b id="s-exists">0</b><span>Already exist</span></div>
-        <div class="stat error"><b id="s-error">0</b><span>Failed</span></div>
+        <div class="stat created"><b id="s-created">0</b><span data-i18n="stat_created">Created</span></div>
+        <div class="stat new"><b id="s-new">0</b><span data-i18n="stat_new">New</span></div>
+        <div class="stat exists"><b id="s-exists">0</b><span data-i18n="stat_exists">Already exist</span></div>
+        <div class="stat error"><b id="s-error">0</b><span data-i18n="stat_error">Failed</span></div>
       </div>
       <div class="card" id="log"></div>
     </section>
   </main>
 
   <footer>
-    <span>Keep this tab open while values are being created.</span>
+    <span data-i18n="footer_keep_open">Keep this tab open while values are being created.</span>
     <span id="version"></span>
   </footer>
 

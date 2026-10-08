@@ -13,7 +13,7 @@ function enhanceSelect(select, placeholder = 'Search…') {
     <div class="picker-pop" hidden>
       <input class="picker-search" type="search" spellcheck="false">
       <div class="picker-list" role="listbox"></div>
-      <div class="picker-empty" hidden>No match</div>
+      <div class="picker-empty" hidden>${window.t ? t('emr_no_match') : 'No match'}</div>
     </div>`;
   select.hidden = true;
   select.after(wrap);
@@ -24,8 +24,14 @@ function enhanceSelect(select, placeholder = 'Search…') {
   const search = wrap.querySelector('.picker-search');
   const list = wrap.querySelector('.picker-list');
   const empty = wrap.querySelector('.picker-empty');
-  search.placeholder = placeholder;
+  search.placeholder = window.t ? t('emr_search_placeholder') : placeholder;
   let active = -1;
+
+  document.addEventListener('lang-changed', () => {
+    search.placeholder = window.t ? t('emr_search_placeholder') : placeholder;
+    empty.textContent = window.t ? t('emr_no_match') : 'No match';
+    syncLabel();
+  });
 
   const items = () => [...list.querySelectorAll('.picker-item:not([hidden])')];
 
@@ -52,7 +58,7 @@ function enhanceSelect(select, placeholder = 'Search…') {
         const c = document.createElement('span');
         c.className = 'picker-count';
         c.textContent = o.dataset.count;
-        c.title = `${o.dataset.count} values`;
+        c.title = `${o.dataset.count} ${window.tPluralWord ? tPluralWord(Number(o.dataset.count), 'plural_value') : 'values'}`;
         d.appendChild(c);
       }
       list.appendChild(d);

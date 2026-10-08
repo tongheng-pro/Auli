@@ -88,13 +88,13 @@
       const b = document.createElement('b');
       b.textContent = m.label;
       const sm = document.createElement('small');
-      sm.textContent = `${n} / ${m.items.length} values · ${g.title}`;
+      sm.textContent = window.t ? t('sync_row_values', { n, total: m.items.length, group: g.title }) : `${n} / ${m.items.length} values · ${g.title}`;
       txt.append(b, sm);
       txt.addEventListener('click', () => cb.click());
       const tog = document.createElement('button');
       tog.type = 'button';
       tog.className = 'am-toggle' + (open ? ' open' : '');
-      tog.title = open ? 'Hide values' : 'Choose which values to create';
+      tog.title = open ? (window.t ? t('sync_hide_values') : 'Hide values') : (window.t ? t('sync_choose_values') : 'Choose which values to create');
       tog.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} values of ${m.label}`);
       tog.setAttribute('aria-expanded', open);
       tog.addEventListener('click', () => {
@@ -129,18 +129,20 @@
   function updateCount() {
     const lists = matches.filter((m) => picked(m).length).length;
     const vals = matches.reduce((n, m) => n + picked(m).length, 0);
-    el('am-count').textContent = matches.length ? `${lists} lists · ${vals} values` : '';
+    el('am-count').textContent = matches.length
+      ? (window.t ? `${lists} ${tPluralWord(lists, 'plural_list')} · ${vals} ${tPluralWord(vals, 'plural_value')}` : `${lists} lists · ${vals} values`)
+      : '';
     const all = matches.length > 0 && matches.every((m) => picked(m).length === m.items.length);
     allBtn.hidden = !matches.length;
     allBtn.disabled = running;
-    allBtn.textContent = all ? 'Uncheck all' : 'Check all';
+    allBtn.textContent = all ? (window.t ? t('uncheck_all') : 'Uncheck all') : (window.t ? t('check_all') : 'Check all');
     runBtn.disabled = running || !vals;
   }
 
   async function detect() {
     if (running || !window.EMR) return;
     const tab = await getTab();
-    if (!matches.length) info.textContent = 'Looking for matching lists…';
+    if (!matches.length) info.textContent = window.t ? t('sync_looking') : 'Looking for matching lists…';
     matches = [];
     let page = null;
     try {
@@ -148,7 +150,7 @@
       [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readValueListLinks });
     } catch {
       render();
-      info.textContent = 'Open a Value List page in this tab. Lists that match an EMR group will appear here.';
+      info.textContent = window.t ? t('sync_open_page_hint') : 'Open a Value List page in this tab. Lists that match an EMR group will appear here.';
       return;
     }
 
@@ -159,9 +161,8 @@
     });
     render(page.type);
     info.textContent = matches.length
-      ? `${matches.length} of ${page.links.length} lists on this page match an EMR group.`
-      : `None of the ${page.links.length} lists on this page match an EMR group. Try another tab (Medical Record, Examination…), or use "One by one".`;
-
+      ? (window.t ? t('sync_matched_count', { matches: matches.length, total: page.links.length }) : `${matches.length} of ${page.links.length} lists on this page match an EMR group.`)
+      : (window.t ? t('sync_none_matched', { total: page.links.length }) : `None of the ${page.links.length} lists on this page match an EMR group. Try another tab (Medical Record, Examination…), or use "One by one".`);
   }
 
   function navigate(tabId, url) {
@@ -190,11 +191,13 @@
     const total = todo.reduce((n, m) => n + m.items.length, 0);
     const delay = await getDelay();
     if (!await ask({
-      title: `Create values in ${plural(todo.length, 'list')}?`,
-      text: `Up to ${plural(total, 'value')}:`,
+      title: window.t ? t('sync_create_in_lists_ask', { count: todo.length, lists: tPluralWord(todo.length, 'plural_list') }) : `Create values in ${plural(todo.length, 'list')}?`,
+      text: window.t ? t('sync_up_to_values', { count: total, values: tPluralWord(total, 'plural_value') }) : `Up to ${plural(total, 'value')}:`,
       items: todo.map((m) => [m.label, m.items.length]),
-      notes: ['Values that already exist will be skipped.',
-        `Waits ${seconds(delay)} between values (${estimate(total, delay)} in total).`],
+      notes: [
+        window.t ? t('note_skip_exist') : 'Values that already exist will be skipped.',
+        window.t ? t('note_wait_delay', { delay: seconds(delay), estimate: estimate(total, delay) }) : `Waits ${seconds(delay)} between values (${estimate(total, delay)} in total).`
+      ],
       ok: 'Create all',
     })) return;
     const tab = await getTab();
@@ -210,11 +213,13 @@
       for (let i = 0; i < todo.length; i++) {
         const m = todo[i];
         if (i > 0 && delay) await sleep(delay * 1000); // pause between lists too
-        notice('busy', `Creating list ${i + 1} of ${todo.length}: ${m.label}…`, ` Waiting ${seconds(delay)} between values. Keep this tab open until it finishes.`);
+        const busyTitle = window.t ? t('sync_creating_list_n', { current: i + 1, total: todo.length, label: m.label }) : `Creating list ${i + 1} of ${todo.length}: ${m.label}…`;
+        const busyDetail = ' ' + (window.t ? t('waiting_delay_busy', { delay: seconds(delay) }) : `Waiting ${seconds(delay)} between values. Keep this tab open until it finishes.`);
+        notice('busy', busyTitle, busyDetail);
         await navigate(tab.id, m.url);
         const [{ result: ready }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: waitForTable });
         msg(m.label, 'head');
-        if (!ready) { fail(m, 'The list page did not load in time. Run again to retry; existing values are skipped.'); continue; }
+        if (!ready) { fail(m, window.t ? t('sync_page_timeout') : 'The list page did not load in time. Run again to retry; existing values are skipped.'); continue; }
 
         const items = m.items.map((v) => ({ name: v.name, description: EMR.describe(v.it).replace(/\|/g, '/') }));
         await sleep(300);
@@ -229,7 +234,7 @@
       }
       summarize(all, true);
     } catch (e) {
-      notice('err', 'Stopped before finishing.', ` ${e.message}. Values created so far are kept. Run again to finish; existing values are skipped.`);
+      notice('err', window.t ? t('sync_stopped') : 'Stopped before finishing.', ` ${window.t ? t('sync_stopped_detail', { error: e.message }) : `${e.message}. Values created so far are kept. Run again to finish; existing values are skipped.`}`);
     } finally {
       running = false;
       setBusy(runBtn, false);
@@ -246,6 +251,7 @@
   });
   runBtn.addEventListener('click', runAll);
   document.addEventListener('emr-data', detect);
+  document.addEventListener('lang-changed', () => { render(); updateCount(); detect(); });
   chrome.tabs.onActivated.addListener(detect);
   chrome.tabs.onUpdated.addListener((id, ch, tab) => { if (tab.active && ch.status === 'complete') detect(); });
   detect(); // EMR data may already be loaded before this script ran

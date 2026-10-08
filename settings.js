@@ -23,14 +23,21 @@
     help.classList.toggle('err', !ok);
     if (!ok) {
       help.textContent = n < MIN_DELAY
-        ? `The minimum is ${MIN_DELAY} seconds. Less than that can go over the hospital system's rate limit.`
-        : `Enter a number of seconds from ${MIN_DELAY} to ${MAX_DELAY}.`;
+        ? (window.t ? t('delay_err_min', { min: MIN_DELAY }) : `The minimum is ${MIN_DELAY} seconds. Less than that can go over the hospital system's rate limit.`)
+        : (window.t ? t('delay_err_range', { min: MIN_DELAY, max: MAX_DELAY }) : `Enter a number of seconds from ${MIN_DELAY} to ${MAX_DELAY}.`);
       return;
     }
-    help.textContent = HELP;
+    help.textContent = window.t ? t('delay_help') : HELP;
     chrome.storage.local.set({ createDelay: n });
   }
   input.addEventListener('input', save);
+  document.addEventListener('lang-changed', () => {
+    if (!input.classList.contains('invalid')) {
+      help.textContent = window.t ? t('delay_help') : HELP;
+    } else {
+      save();
+    }
+  });
   // Leaving the box with an invalid number puts back the nearest allowed value
   input.addEventListener('blur', () => {
     if (!input.classList.contains('invalid')) return;

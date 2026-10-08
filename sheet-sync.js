@@ -42,28 +42,29 @@
   async function sync({ manual = false } = {}) {
     if (busy) return;
     const src = csvUrl(urlInput.value);
-    if (!src) return show('Paste a Google Sheets link (https://docs.google.com/spreadsheets/…).', true);
+    if (!src) return show(window.t ? t('sheet_paste_link_err') : 'Paste a Google Sheets link (https://docs.google.com/spreadsheets/…).', true);
     if (!manual && creating()) return;
     busy = true;
     const myGen = gen;
     syncBtn.disabled = true;
     syncBtn.classList.add('busy');
-    if (manual) show('Reading the Google Sheet…');
+    if (manual) show(window.t ? t('sheet_reading') : 'Reading the Google Sheet…');
     try {
       let res;
       try { res = await fetch(src, { cache: 'no-store', credentials: 'omit' }); }
-      catch { throw new Error('Could not reach Google Sheets. Check your internet connection.'); }
+      catch { throw new Error(window.t ? t('sheet_net_err') : 'Could not reach Google Sheets. Check your internet connection.'); }
       const text = await res.text();
       // Not shared -> Google answers with a sign-in page instead of CSV
       if (!res.ok || /^\s*</.test(text)) {
-        throw new Error('Google did not share this sheet. In the sheet, click Share › General access › "Anyone with the link" (Viewer), then sync again.');
+        throw new Error(window.t ? t('sheet_share_err') : 'Google did not share this sheet. In the sheet, click Share › General access › "Anyone with the link" (Viewer), then sync again.');
       }
       const r = EMRIO.groupsFromCsv(text);
       if (r.errors?.length) {
         const more = r.errors.length > 3 ? ` …and ${r.errors.length - 3} more.` : '';
-        throw new Error(`The sheet has problems, so your current data was kept: ${r.errors.slice(0, 3).join(' ')}${more}`);
+        const errs = r.errors.slice(0, 3).join(' ') + more;
+        throw new Error(window.t ? t('sheet_problems_err', { errors: errs }) : `The sheet has problems, so your current data was kept: ${errs}`);
       }
-      if (!r.groups.length) throw new Error('The sheet has no values. Add rows with a group and an english name.');
+      if (!r.groups.length) throw new Error(window.t ? t('sheet_empty_err') : 'The sheet has no values. Add rows with a group and an english name.');
       if (myGen !== gen) return; // paused while reading
 
       const values = r.groups.reduce((n, g) => n + g.items.length, 0);

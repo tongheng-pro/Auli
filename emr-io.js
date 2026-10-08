@@ -217,5 +217,6 @@
   });
 
   document.addEventListener('emr-data', () => setTimeout(showSummary));
+  document.addEventListener('lang-changed', () => setTimeout(showSummary));
   showSummary();
 })();
