@@ -1,202 +1,473 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auli</title>
+<script src="theme.js"></script>
 <style>
+  /* Poppins (bundled, SIL Open Font License). Khmer text falls back to the system Khmer font. */
+  @font-face { font-family: "Poppins"; font-style: normal; font-weight: 400; font-display: swap;
+    src: url("fonts/poppins-400.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: "Poppins"; font-style: normal; font-weight: 500; font-display: swap;
+    src: url("fonts/poppins-500.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: "Poppins"; font-style: normal; font-weight: 600; font-display: swap;
+    src: url("fonts/poppins-600.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+  @font-face { font-family: "Poppins"; font-style: normal; font-weight: 700; font-display: swap;
+    src: url("fonts/poppins-700.woff2") format("woff2"); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
   :root {
-    color-scheme: light dark;
-    --bg: #F2F2F7; --card: #FFFFFF; --text: #000000; --muted: #8E8E93; --sep: rgba(60,60,67,.18);
-    --fill: rgba(118,118,128,.12); --seg: #FFFFFF; --hover: rgba(0,122,255,.10);
-    --blue: #007AFF; --green: #34C759; --orange: #FF9500; --red: #FF3B30; --gray: #8E8E93;
+    color-scheme: light;
+    --bg: #F3F4F6; --card: #FFFFFF; --text: #16191F; --muted: #565C66; --border: #D5D9DE; --line: #E7E9EC; --subtle: #FAFBFC;
+    --accent: #0B63B0; --accent-hover: #09538F; --accent-soft: #E8F1FA; --btn: #0B63B0; --btn-hover: #09538F;
+    --ok: #1E7B34; --ok-soft: #EAF5EC; --err: #B3261E; --err-soft: #FCEDEC; --warn: #8A5300; --warn-soft: #FFF4E0;
+    --info-line: #B9D3EC; --ok-line: #B5DABE; --err-line: #F0C2BF; --danger: #B3261E; --danger-hover: #8C1D18;
+    --input: #FFFFFF; --input-line: #8D949E; --placeholder: #80868F; --ring: rgba(11,99,176,.2);
+    --disabled: #E3E6EA; --disabled-text: #8A9099; --shadow: rgba(0,0,0,.08);
+    --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23565C66' stroke-width='1.6'/%3E%3C/svg%3E");
+    --radius: 8px;
+    --font: "Poppins", "Noto Sans Khmer", "Khmer OS", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
+  /* Dark: follows the system unless the user picked Light / Dark in the footer */
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #000000; --card: #1C1C1E; --text: #FFFFFF; --muted: #8E8E93; --sep: rgba(84,84,88,.6);
-      --fill: rgba(118,118,128,.24); --seg: #636366; --hover: rgba(10,132,255,.22);
-      --blue: #0A84FF; --green: #30D158; --orange: #FF9F0A; --red: #FF453A; }
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --bg: #121417; --card: #1C1F24; --text: #E8EAED; --muted: #A3A9B3; --border: #3A3F47; --line: #2B3037; --subtle: #181B20;
+      --accent: #6AAEF0; --accent-hover: #8EC2F5; --accent-soft: #17314B; --btn: #2B74C2; --btn-hover: #3683D3;
+      --ok: #6CCB7E; --ok-soft: #173322; --err: #F28B82; --err-soft: #3B1C1A; --warn: #F0B45A; --warn-soft: #3A2B12;
+      --info-line: #24496E; --ok-line: #2C5A37; --err-line: #6B2D29; --danger: #C5372C; --danger-hover: #D9483C;
+      --input: #15181C; --input-line: #5E656F; --placeholder: #7D848E; --ring: rgba(106,174,240,.35);
+      --disabled: #2A2E35; --disabled-text: #6F7680; --shadow: rgba(0,0,0,.45);
+      --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A3A9B3' stroke-width='1.6'/%3E%3C/svg%3E");
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #121417; --card: #1C1F24; --text: #E8EAED; --muted: #A3A9B3; --border: #3A3F47; --line: #2B3037; --subtle: #181B20;
+    --accent: #6AAEF0; --accent-hover: #8EC2F5; --accent-soft: #17314B; --btn: #2B74C2; --btn-hover: #3683D3;
+    --ok: #6CCB7E; --ok-soft: #173322; --err: #F28B82; --err-soft: #3B1C1A; --warn: #F0B45A; --warn-soft: #3A2B12;
+    --info-line: #24496E; --ok-line: #2C5A37; --err-line: #6B2D29; --danger: #C5372C; --danger-hover: #D9483C;
+    --input: #15181C; --input-line: #5E656F; --placeholder: #7D848E; --ring: rgba(106,174,240,.35);
+    --disabled: #2A2E35; --disabled-text: #6F7680; --shadow: rgba(0,0,0,.45);
+    --chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23A3A9B3' stroke-width='1.6'/%3E%3C/svg%3E");
   }
   * { box-sizing: border-box; }
-  body { min-width: 300px; margin: 0; padding: 0 16px 14px; background: var(--bg); color: var(--text);
-    font: 15px/1.35 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased; }
+  html, body { overflow-x: hidden; }
+  body { min-width: 300px; margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 var(--font); }
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-  header { display: flex; align-items: center; gap: 12px; padding: 18px 2px 14px; }
-  header img { width: 44px; height: 44px; border-radius: 10px; }
-  header h1 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
-  header p { margin: 1px 0 0; font-size: 13px; color: var(--muted); }
+  /* ---- Header ---- */
+  .app-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--card); border-bottom: 1px solid var(--border); }
+  .app-header img { width: 36px; height: 36px; flex: none; }
+  .app-header > div { min-width: 0; }
+  .app-header h1 { margin: 0; font-size: 16px; font-weight: 700; }
+  .app-header p { margin: 0; font-size: 12px; color: var(--muted); }
+  .header-actions { display: flex; gap: 4px; margin-left: auto; align-self: flex-start; flex: none; }
+  .icon-btn { width: 34px; height: 34px; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 8px;
+    background: none; color: var(--muted); transition: background .12s, color .12s; }
+  .icon-btn:hover { background: var(--bg); color: var(--text); }
+  .icon-btn[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+  .icon-btn svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  /* theme button shows the mode you switch TO: moon in light mode, sun in dark mode */
+  .icon-btn .i-sun, :root.is-dark .icon-btn .i-moon { display: none; }
+  :root.is-dark .icon-btn .i-sun { display: block; }
 
-  .section-title { margin: 14px 16px 6px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
-  .section-title { display: flex; justify-content: space-between; }
-  .section-title small { text-transform: none; font-size: 12px; }
-  .group { background: var(--card); border-radius: 10px; overflow: hidden; }
-  .footnote { margin: 6px 16px 0; font-size: 12px; color: var(--muted); }
-  .footnote code { font: 12px ui-monospace, Menlo, monospace; }
+  /* Settings view (gear): only the EMR data page is shown */
+  body.settings-open main > :not(#pane-data) { display: none !important; }
+  .settings-bar { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; }
+  .settings-bar h2 { margin: 0; font-size: 16px; font-weight: 700; }
+  .back-btn { display: inline-flex; align-items: center; gap: 4px; padding: 6px 10px 6px 6px; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--card); color: var(--text); font-size: 13px; }
+  .back-btn:hover { background: var(--bg); }
+  .settings-section { margin: 16px 0 6px; font-size: 14px; font-weight: 700; }
+  .settings-bar + .settings-section { margin-top: 4px; }
+  .delay-row { display: flex; align-items: center; gap: 8px; }
+  .delay-row input { width: 90px; height: 36px; padding: 0 10px; border: 1px solid var(--input-line); border-radius: 6px;
+    background: var(--input); color: var(--text); font: 14px var(--font); }
+  .delay-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+  .delay-row input.invalid { border-color: var(--err); }
+  .delay-row span { color: var(--muted); }
+  .back-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-  .type { display: flex; align-items: center; justify-content: space-between; padding: 11px 16px; }
-  .type span { color: var(--text); }
-  .type b { font-weight: 400; color: var(--muted); max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .type b.bad { color: var(--red); }
+  main { padding: 12px 16px 4px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
+  .card + .card { margin-top: 12px; }
 
-  textarea { display: block; width: 100%; height: 130px; resize: vertical; padding: 11px 16px; border: 0; outline: none;
-    background: transparent; color: var(--text); font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
-  textarea::placeholder { color: var(--muted); opacity: .7; }
+  /* ---- Current page status ---- */
+  .page-status { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; }
+  .page-status .dot { flex: none; width: 20px; height: 20px; border-radius: 50%; margin-top: 1px; display: grid; place-items: center;
+    font-size: 12px; font-weight: 700; color: #fff; background: #1E7B34; }
+  .page-status .dot::before { content: "✓"; }
+  .page-status.bad .dot { background: #A66300; }
+  .page-status.bad .dot::before { content: "!"; }
+  .page-status .label { font-size: 12px; color: var(--muted); }
+  .page-status b { display: block; font-weight: 600; word-break: break-word; }
+  .page-status.bad b { color: var(--warn); }
+  .page-status .hint { margin-top: 2px; font-size: 12px; color: var(--muted); }
 
-  .actions { display: flex; gap: 10px; margin-top: 16px; }
-  button { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 44px;
-    border: 0; border-radius: 12px; font: 600 15px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    cursor: pointer; transition: opacity .15s; }
-  button:active:not(:disabled) { opacity: .6; }
-  button:disabled { opacity: .4; cursor: default; }
-  .secondary { background: var(--fill); color: var(--blue); }
-  .primary { background: var(--blue); color: #fff; }
-  .spin { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%;
-    animation: s .8s linear infinite; display: none; }
+  /* ---- Form fields ---- */
+  .field { padding: 10px 12px 12px; }
+  .field + .field { border-top: 1px solid var(--line); }
+  .field-label { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; font-weight: 600; }
+  .field-label small { font-weight: 400; font-size: 12px; color: var(--muted); }
+  .field-label .link { flex: none; white-space: nowrap; }
+  .help { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
+  .help:empty { display: none; }
+  .help.err { color: var(--err); }
+  .help code { font: 12px ui-monospace, Menlo, Consolas, monospace; background: var(--bg); padding: 0 4px; border-radius: 4px; }
+
+  select, textarea, .picker-btn, .picker-search {
+    width: 100%; border: 1px solid var(--input-line); border-radius: 6px; background: var(--input); color: var(--text); font: 14px var(--font); }
+  select { height: 36px; padding: 0 32px 0 10px; appearance: none; cursor: pointer;
+    background: var(--input) var(--chev) no-repeat right 12px center; }
+  textarea { display: block; min-height: 140px; padding: 8px 10px; resize: vertical; line-height: 1.5; }
+  textarea.invalid { border-color: var(--err); }
+  textarea::placeholder, .picker-search::placeholder { color: var(--placeholder); }
+  select:focus, textarea:focus, .picker-btn:focus-visible, .picker-search:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+
+  /* ---- Buttons ---- */
+  button { font: 600 14px var(--font); cursor: pointer; color: inherit; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px;
+    border-radius: var(--radius); border: 1px solid transparent; transition: background .12s, border-color .12s; }
+  .btn-block { width: 100%; }
+  .btn-primary { background: var(--btn); color: #fff; }
+  .btn-primary:hover:not(:disabled) { background: var(--btn-hover); }
+  .btn-secondary { background: var(--input); color: var(--text); border-color: var(--input-line); }
+  .btn-secondary:hover:not(:disabled) { background: var(--bg); }
+  .btn:disabled { background: var(--disabled); color: var(--disabled-text); border-color: transparent; cursor: not-allowed; }
+  .btn:active:not(:disabled) { transform: translateY(1px); }
+  .btn-row { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+  .link { padding: 2px 0; border: 0; background: none; color: var(--accent); font-weight: 400; font-size: 12px; text-decoration: underline; }
+  .link:hover:not(:disabled) { color: var(--accent-hover); }
+  .link:disabled { color: var(--muted); text-decoration: none; cursor: default; }
+  .spin { display: none; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
   .busy .spin { display: inline-block; }
-  @keyframes s { to { transform: rotate(360deg); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
-  .stats { display: none; margin-top: 16px; }
-  .stats.show { display: grid; grid-template-columns: repeat(4, 1fr); }
-  .stat { text-align: center; padding: 10px 2px; }
-  .stat + .stat { border-left: .5px solid var(--sep); }
-  .stat b { display: block; font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .stat span { font-size: 11px; color: var(--muted); }
-  .stat.created b { color: var(--green); } .stat.new b { color: var(--blue); }
-  .stat.exists b { color: var(--orange); } .stat.error b { color: var(--red); }
+  /* ---- Tabs ---- */
+  .tabs { display: flex; margin-top: 16px; border-bottom: 1px solid var(--border); }
+  .tab { flex: 1; padding: 10px 6px 9px; border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; background: none; color: var(--muted); font-size: 14px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .pane { padding-top: 12px; }
+  .pane-intro { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+  .section-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 6px; }
+  .section-head h2 { margin: 0; font-size: 14px; font-weight: 700; }
+  .section-head .links { display: flex; align-items: baseline; gap: 12px; }
+  .section-head small { font-size: 12px; color: var(--muted); }
+  .actions { margin-top: 12px; }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
+  .btn-sm { min-height: 30px; padding: 0 12px; font-size: 13px; }
+  .results-head { align-items: center; margin-bottom: 8px; }
 
-  #log { margin-top: 16px; max-height: 50vh; overflow: auto; background: var(--card); border-radius: 10px; }
-  #log:empty { display: none; }
-  .item { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 16px; position: relative; }
-  .item + .item::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
-  .item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .item .note { display: block; font-size: 12px; color: var(--muted); white-space: normal; }
-  .badge { flex-shrink: 0; font-size: 13px; display: inline-flex; align-items: center; gap: 5px; color: var(--muted); }
-  .badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-  .badge.created { color: var(--green); } .badge.new { color: var(--blue); }
-  .badge.exists { color: var(--gray); } .badge.error { color: var(--red); }
-  .msg { padding: 12px 16px; font-size: 14px; color: var(--muted); }
-  .msg.err { color: var(--red); }
+  /* ---- EMR data tab ---- */
+  .io-summary { margin: 0; }
+  .io-actions { margin-top: 12px; }
+  .io-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 12px; }
+  .io-row + .io-row { border-top: 1px solid var(--line); }
+  .io-row .help { margin-top: 2px; }
+  .io-btns { display: flex; gap: 6px; flex: none; }
+  #io-status { margin: 12px 0 0; }
+  #io-status ul { margin: 4px 0 0; padding-left: 18px; }
+  .guide { margin-top: 12px; padding: 0 12px; }
+  .guide summary { padding: 10px 0; font-weight: 700; cursor: pointer; }
+  .guide ol { margin: 0 0 10px; padding-left: 20px; font-size: 13px; }
+  .guide ol li { margin-bottom: 6px; }
+  .guide ul { margin: 4px 0 0; padding-left: 18px; }
+  .guide code, .guide pre { font: 12px ui-monospace, Menlo, Consolas, monospace; background: var(--bg); border-radius: 4px; }
+  .guide code { padding: 0 4px; }
+  .guide pre { margin: 4px 0 8px; padding: 8px; overflow-x: auto; white-space: pre; }
+  .cols { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; }
+  .cols caption { text-align: left; font-weight: 700; font-size: 13px; padding-bottom: 4px; }
+  .cols th { text-align: left; vertical-align: top; white-space: nowrap; padding: 5px 8px 5px 0; font: 600 12px ui-monospace, Menlo, Consolas, monospace; }
+  .cols td { padding: 5px 0; color: var(--muted); }
+  .cols tr + tr { border-top: 1px solid var(--line); }
+  .io-more { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .io-more .btn { flex: 1 1 auto; }
 
-  footer { text-align: center; color: var(--muted); font-size: 11px; margin-top: 14px; }
-
-  select { width: 100%; padding: 11px 16px; border: 0; outline: none; background: transparent; color: var(--text);
-    font: 15px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; -webkit-appearance: none; appearance: none; cursor: pointer; }
-  select option, select optgroup { background: var(--card); color: var(--text); }
-  select optgroup { color: var(--muted); font-weight: 600; }
-  .type + select { border-top: .5px solid var(--sep); }
-  .tabs { display: flex; gap: 2px; margin-top: 16px; padding: 2px; border-radius: 9px; background: var(--fill); }
-  .tab { height: 32px; border-radius: 7px; background: transparent; color: var(--text); font-weight: 500; font-size: 13px; }
-  .tab.active { background: var(--seg); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-  .pane[hidden] { display: none; }
-  .group select + select { border-top: .5px solid var(--sep); }
-  .link { background: none; border: 0; height: auto; padding: 0; flex: none; color: var(--blue); font: 12px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; text-transform: none; }
-
+  /* ---- Matched lists ---- */
   #am-list { max-height: 360px; overflow: auto; }
   #am-list:empty { display: none; }
-  .am-row { display: flex; align-items: center; gap: 10px; padding: 9px 8px 9px 16px; position: relative; }
-  .am-row:not(:first-child)::before { content: ""; position: absolute; top: 0; left: 44px; right: 0; border-top: .5px solid var(--sep); }
-  #am-list input { width: 18px; height: 18px; margin: 0; accent-color: var(--blue); flex: none; cursor: pointer; }
-  .am-row > div { min-width: 0; flex: 1; cursor: pointer; }
-  .am-row b { display: block; font-weight: 400; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .empty { padding: 20px 16px; text-align: center; color: var(--muted); font-size: 13px; background: var(--card); border: 1px dashed var(--border); border-radius: var(--radius); }
+  #am-list:not(:empty) + .empty { padding: 0; margin-top: 6px; text-align: left; border: 0; background: none; font-size: 12px; }
+  .am-row { display: flex; align-items: center; gap: 10px; padding: 8px 6px 8px 12px; border-top: 1px solid var(--line); }
+  .am-row:first-child { border-top: 0; }
+  #am-list input { width: 18px; height: 18px; margin: 0; flex: none; accent-color: var(--accent); cursor: pointer; }
+  .am-row > div { flex: 1; min-width: 0; cursor: pointer; }
+  .am-row b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .am-row small { display: block; font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .am-toggle { flex: none; width: 32px; height: 32px; padding: 0; border-radius: 8px; background: transparent; position: relative; }
-  .am-toggle:hover { background: var(--fill); }
-  .am-toggle::after { content: ""; position: absolute; left: 11px; top: 12px; width: 7px; height: 7px; border: solid var(--muted);
-    border-width: 0 2px 2px 0; transform: rotate(-45deg); transition: transform .15s; }
-  .am-toggle.open::after { transform: rotate(45deg); left: 12px; top: 10px; }
-  .am-values { padding: 0 0 6px 44px; }
-  .am-value { display: flex; align-items: center; gap: 10px; padding: 6px 16px 6px 0; font-size: 14px; cursor: pointer; }
+  .am-row.current small::before { content: "Open now · "; color: var(--accent); font-weight: 600; }
+  .am-toggle { flex: none; display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border: 0; border-radius: 6px; background: none; color: var(--accent); font-size: 12px; font-weight: 600; }
+  .am-toggle:hover { background: var(--accent-soft); }
+  .am-toggle::before { content: "Values"; }
+  .am-toggle.open::before { content: "Hide"; }
+  .am-toggle::after { content: ""; width: 6px; height: 6px; border: solid currentColor; border-width: 0 1.6px 1.6px 0; transform: rotate(45deg); margin-top: -3px; transition: transform .15s; }
+  .am-toggle.open::after { transform: rotate(-135deg); margin-top: 3px; }
+  .am-values { padding: 2px 12px 8px 40px; background: var(--subtle); border-top: 1px solid var(--line); }
+  .am-value { display: flex; align-items: center; gap: 10px; padding: 5px 0; font-size: 13px; cursor: pointer; }
   .am-value span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .am-row.current b { color: var(--blue); }
 
-  select[hidden] { display: none; }
-  .picker-btn { width: 100%; height: auto; display: flex; justify-content: space-between; gap: 8px; padding: 11px 16px;
-    border-radius: 0; background: transparent; color: var(--text); font-weight: 400; text-align: left; }
-  .picker-btn:active:not(:disabled) { opacity: 1; background: var(--fill); }
+  /* ---- Group picker (picker.js) ---- */
+  .picker-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 6px 12px 6px 10px; text-align: left; font-weight: 400; }
   .picker-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .picker-label.placeholder { color: var(--muted); }
-  .picker-chev { flex: none; width: 8px; height: 8px; margin: 4px 2px 0 0; border: solid var(--muted); border-width: 0 2px 2px 0;
-    transform: rotate(45deg); transition: transform .15s; }
-  .picker-btn[aria-expanded="true"] .picker-chev { transform: rotate(-135deg); margin-top: 8px; }
-  .picker-pop { border-top: .5px solid var(--sep); }
-  .picker-search { display: block; width: calc(100% - 24px); margin: 10px 12px 6px; padding: 8px 12px; border: 0; outline: none;
-    border-radius: 9px; background: var(--fill); color: var(--text); font: 14px -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .picker-label.placeholder { color: var(--placeholder); }
+  .picker-chev { flex: none; width: 7px; height: 7px; border: solid var(--muted); border-width: 0 1.6px 1.6px 0; transform: rotate(45deg); margin-top: -3px; transition: transform .15s; }
+  .picker-btn[aria-expanded="true"] .picker-chev { transform: rotate(-135deg); margin-top: 3px; }
+  .picker-pop { margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); box-shadow: 0 2px 8px var(--shadow); }
+  .picker-search { display: block; width: calc(100% - 16px); height: 34px; margin: 8px; padding: 0 10px; }
   .picker-list { max-height: 300px; overflow: auto; padding-bottom: 6px; }
-  .picker-head { padding: 10px 16px 4px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .02em; }
-  .picker-item { margin: 0 6px; padding: 8px 10px 8px 22px; border-radius: 7px; cursor: pointer; font-size: 14px; position: relative; }
-  .picker-item.active { background: var(--hover); }
-  .picker-item.selected { color: var(--blue); font-weight: 600; }
-  .picker-item.selected::before { content: ""; position: absolute; left: 8px; top: 50%; width: 6px; height: 6px; margin-top: -3px;
-    border-radius: 50%; background: var(--blue); }
-  .picker-empty { padding: 10px 16px 14px; color: var(--muted); font-size: 13px; }
+  .picker-head { padding: 8px 12px 3px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .picker-item { padding: 7px 12px 7px 26px; cursor: pointer; position: relative; }
+  .picker-item.active { background: var(--accent-soft); }
+  .picker-item.selected { font-weight: 600; }
+  .picker-item.selected::before { content: "✓"; position: absolute; left: 9px; color: var(--accent); }
+  .picker-empty { padding: 10px 12px 12px; color: var(--muted); font-size: 13px; }
+
+  /* ---- Results ---- */
+  .results { margin-top: 16px; }
+  .notice { display: flex; gap: 8px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid; font-size: 13px; margin-bottom: 10px; }
+  .notice::before { flex: none; width: 14px; text-align: center; font-weight: 700; }
+  .notice.info { background: var(--accent-soft); border-color: var(--info-line); }
+  .notice.info::before { content: "i"; color: var(--accent); }
+  .notice.ok { background: var(--ok-soft); border-color: var(--ok-line); }
+  .notice.ok::before { content: "✓"; color: var(--ok); }
+  .notice.err { background: var(--err-soft); border-color: var(--err-line); }
+  .notice.err::before { content: "!"; color: var(--err); }
+  .notice.busy::before { content: ""; width: 10px; height: 10px; margin: 3px 2px 0; border: 2px solid var(--accent); border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+  .notice b { display: block; }
+
+  .stats { display: none; margin-bottom: 10px; }
+  .stats.show { display: grid; grid-template-columns: repeat(4, 1fr); }
+  .stat { padding: 8px 4px; text-align: center; border-left: 1px solid var(--line); }
+  .stat:first-child { border-left: 0; }
+  .stat b { display: block; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 11px; color: var(--muted); }
+  .stat.created b { color: var(--ok); } .stat.new b { color: var(--accent); } .stat.error b { color: var(--err); }
+
+  #log { max-height: 50vh; overflow: auto; }
+  #log:empty { display: none; }
+  .item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--line); }
+  .item:first-child { border-top: 0; }
+  .item .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .note { display: block; font-size: 12px; color: var(--err); white-space: normal; }
+  .badge { flex: none; padding: 1px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; background: var(--bg); color: var(--muted); }
+  .badge.created { background: var(--ok-soft); color: var(--ok); }
+  .badge.new { background: var(--accent-soft); color: var(--accent); }
+  .badge.error { background: var(--err-soft); color: var(--err); }
+  .msg { padding: 8px 12px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); }
+  .msg:first-child { border-top: 0; }
+  .msg.head { background: var(--subtle); color: var(--text); font-weight: 700; }
+  .msg.err { color: var(--err); }
+
+  footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 16px 14px; font-size: 11px; color: var(--muted); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
-  <header>
+  <header class="app-header">
     <img src="icons/icon128.png" alt="">
     <div>
-      <h1>Value List</h1>
-      <p>Bulk create · duplicates skipped</p>
+      <h1>Auli</h1>
+      <p>Add values to hospital Value Lists in bulk. Existing values are skipped.</p>
+    </div>
+    <div class="header-actions">
+      <button id="open-settings" class="icon-btn" aria-label="Settings" title="Settings: speed, EMR data" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      <button id="theme" class="icon-btn" aria-label="Switch to dark mode" title="Switch to dark mode"><svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg><svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg></button>
     </div>
   </header>
 
-  <div class="group">
-    <div class="type"><span>List Type</span><b id="type">—</b></div>
-    <select id="emr-desc">
-      <option value="none">Description: None</option>
-      <option value="khmer">Description: Khmer term</option>
-      <option value="en">Description: English</option>
-      <option value="khmer-en">Description: Khmer - English</option>
-      <option value="code">Description: Code</option>
-    </select>
-  </div>
-
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" data-tab="sync">Sync all from EMR</button>
-    <button class="tab" role="tab" data-tab="single">One by one</button>
-  </div>
-
-  <section class="pane" data-pane="sync">
-    <div class="section-title">Matched lists <small id="am-count"></small></div>
-    <div class="group" id="am-list"></div>
-    <div class="footnote" id="am-info">Open a Value List page to match its lists with the EMR groups.</div>
-    <div class="actions">
-      <button id="am-run" class="primary" disabled><i class="spin"></i>Create all matched</button>
+  <main>
+    <!-- Current page -->
+    <div class="card page-status bad" id="page-status" role="status">
+      <span class="dot" aria-hidden="true"></span>
+      <div>
+        <div class="label">Current page</div>
+        <b id="type">Checking…</b>
+        <div class="hint" id="page-hint"></div>
+      </div>
     </div>
-  </section>
 
-  <section class="pane" data-pane="single">
-    <div class="section-title">EMR Standard <button id="emr-refresh" class="link" title="Re-scan every page of emr-doc.pmrs2.org and save">Refresh</button></div>
-    <div class="group">
-      <select id="emr-group"></select>
+    <!-- Shared setting -->
+    <div class="card">
+      <div class="field">
+        <label class="field-label" for="emr-desc">Description for EMR values</label>
+        <select id="emr-desc">
+          <option value="none">None (name only)</option>
+          <option value="khmer">Khmer term</option>
+          <option value="en">English</option>
+          <option value="khmer-en">Khmer - English</option>
+          <option value="code">Code</option>
+        </select>
+      </div>
     </div>
-    <div class="footnote" id="emr-info"></div>
 
-    <div class="section-title">Values <small id="count">0 values</small></div>
-    <div class="group">
-      <textarea id="values" spellcheck="false" placeholder="One value per line"></textarea>
+    <div class="tabs" role="tablist" aria-label="Mode">
+      <button class="tab" role="tab" id="tab-sync" aria-controls="pane-sync" data-tab="sync">Sync all</button>
+      <button class="tab" role="tab" id="tab-single" aria-controls="pane-single" data-tab="single">One by one</button>
     </div>
-    <div class="footnote">Optional description: <code>Name | Description</code></div>
 
-    <div class="actions">
-      <button id="scan" class="secondary"><i class="spin"></i>Scan</button>
-      <button id="run" class="primary"><i class="spin"></i>Create</button>
-    </div>
-  </section>
+    <!-- Mode 1: sync every matched list -->
+    <section class="pane" id="pane-sync" role="tabpanel" aria-labelledby="tab-sync" data-pane="sync">
+      <p class="pane-intro">Fill every list on this page from the EMR standard. Lists with the same name as an EMR group are found automatically. Untick anything you don't want, then create.</p>
+      <div class="section-head">
+        <h2>Matched lists</h2>
+        <small id="am-count"></small>
+      </div>
+      <div class="card" id="am-list"></div>
+      <div class="empty" id="am-info">Open a Value List page to find lists that match the EMR groups.</div>
+      <div class="actions">
+        <button id="am-run" class="btn btn-primary btn-block" disabled><i class="spin"></i>Create all matched</button>
+      </div>
+    </section>
 
-  <div class="stats group" id="stats">
-    <div class="stat created"><b id="s-created">0</b><span>Created</span></div>
-    <div class="stat new"><b id="s-new">0</b><span>New</span></div>
-    <div class="stat exists"><b id="s-exists">0</b><span>Skipped</span></div>
-    <div class="stat error"><b id="s-error">0</b><span>Errors</span></div>
-  </div>
+    <!-- Mode 2: one list -->
+    <section class="pane" id="pane-single" role="tabpanel" aria-labelledby="tab-single" data-pane="single">
+      <p class="pane-intro">Add values to the list that is open in this tab.</p>
+      <div class="card">
+        <div class="field">
+          <div class="field-label">
+            <span id="emr-group-label">1. EMR group <small>(optional)</small></span>
+            <button id="emr-refresh" class="link" title="Download the latest values from emr-doc.pmrs2.org">Update EMR data</button>
+          </div>
+          <select id="emr-group" aria-labelledby="emr-group-label"></select>
+          <p class="help" id="emr-info"></p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="values">2. Values <small id="count">0 values</small></label>
+          <textarea id="values" spellcheck="false" aria-describedby="values-help" placeholder="One value per line, for example:&#10;Fever&#10;Headache | Pain in the head"></textarea>
+          <p class="help" id="values-help">Put each value on its own line. To add a description, use <code>Name | Description</code>.</p>
+        </div>
+      </div>
+      <div class="actions btn-row">
+        <button id="scan" class="btn btn-secondary" title="See which values are new, without creating anything"><i class="spin"></i>Check</button>
+        <button id="run" class="btn btn-primary"><i class="spin"></i>Create values</button>
+      </div>
+    </section>
 
-  <div id="log"></div>
-  <footer>Keep the tab open while creating</footer>
+    <!-- Settings (gear): manage the EMR data (export / edit / import) -->
+    <section id="pane-data" aria-labelledby="settings-title" hidden>
+      <div class="settings-bar">
+        <button id="close-settings" class="back-btn" title="Back to Sync all / One by one">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Back
+        </button>
+        <h2 id="settings-title">Settings</h2>
+      </div>
+
+      <h3 class="settings-section">Creating</h3>
+      <div class="card field">
+        <label class="field-label" for="create-delay">Wait between values</label>
+        <div class="delay-row">
+          <input type="number" id="create-delay" min="2" max="60" step="0.5" inputmode="decimal" aria-describedby="delay-help">
+          <span>seconds</span>
+        </div>
+        <p class="help" id="delay-help">Pause after each value is created, and between lists in "Sync all". Minimum and default: 2 seconds, which keeps Auli under the hospital system's rate limit. Increase it if you see "Too many requests" or values fail to save. Maximum 60.</p>
+      </div>
+
+      <h3 class="settings-section">EMR data</h3>
+      <p class="pane-intro">The EMR values used by "Sync all" and "One by one". Export them, edit or add values in Excel, then import the file back.</p>
+
+      <div class="card field">
+        <div class="field-label">Current data</div>
+        <p class="io-summary" id="io-summary"></p>
+      </div>
+
+      <div class="card io-actions">
+        <div class="io-row">
+          <div>
+            <b>1. Export</b>
+            <p class="help">Download the current values to edit them.</p>
+          </div>
+          <div class="io-btns">
+            <button id="io-export-csv" class="btn btn-secondary btn-sm" title="Opens in Excel or Google Sheets">Export CSV</button>
+            <button id="io-export-json" class="btn btn-secondary btn-sm" title="For developers / backups">JSON</button>
+          </div>
+        </div>
+        <div class="io-row">
+          <div>
+            <b>2. Import</b>
+            <p class="help">Choose your edited .csv or .json file. It replaces the current values.</p>
+          </div>
+          <div class="io-btns">
+            <button id="io-import" class="btn btn-primary btn-sm">Import file…</button>
+            <input type="file" id="io-file" accept=".csv,.json,text/csv,application/json" hidden>
+          </div>
+        </div>
+      </div>
+
+      <div id="io-status" hidden></div>
+
+      <details class="card guide" open>
+        <summary>How to edit EMR data</summary>
+        <ol>
+          <li>Click <b>Export CSV</b> and open the file in Excel or Google Sheets.</li>
+          <li>Edit it. <b>One row = one value.</b> Rows with the same <code>group</code> belong together.
+            <ul>
+              <li><b>Change</b> a value: edit the cell.</li>
+              <li><b>Add a value</b>: add a row and type the existing group name exactly.</li>
+              <li><b>Add a group</b>: add rows with a new group name.</li>
+              <li><b>Remove</b> a value: delete its row.</li>
+            </ul>
+          </li>
+          <li>Save as <b>CSV UTF-8</b> (Excel: File › Save As › "CSV UTF-8"), so Khmer text is kept.</li>
+          <li>Click <b>Import file…</b> and choose it. If something is wrong, you'll see the row number. Nothing changes until the file is correct.</li>
+        </ol>
+        <table class="cols">
+          <caption>Columns</caption>
+          <tr><th>group</th><td><b>Required.</b> Group name. Use the same name as the list in the hospital system (e.g. <i>Birth Control Type</i>) so "Sync all" can match it.</td></tr>
+          <tr><th>value</th><td><b>Required.</b> The value to create (e.g. <i>Condom</i>).</td></tr>
+          <tr><th>description</th><td>English description (optional).</td></tr>
+          <tr><th>khmer</th><td>Khmer term (optional).</td></tr>
+          <tr><th>code</th><td>Code (optional; the value is used if empty).</td></tr>
+          <tr><th>page, section</th><td>Only for grouping in the group picker (optional; "Custom" if empty).</td></tr>
+        </table>
+        <p class="help">Example:</p>
+        <pre>group,value,description,khmer
+Birth Control Type,Condom,,ស្រោមអនាម័យ
+Birth Control Type,Pill,Oral pill,ថ្នាំគ្រាប់
+My New List,First value,,</pre>
+        <p class="help">Which description is used when creating is set by "Description for EMR values" on the main screen. To undo all changes, use <b>Reset to built-in data</b>.</p>
+      </details>
+
+      <div class="io-more">
+        <button id="io-update" class="btn btn-secondary btn-sm" title="Replaces the current data with the latest values from emr-doc.pmrs2.org"><i class="spin"></i>Update from emr-doc website</button>
+        <button id="io-reset" class="btn btn-danger btn-sm" title="Remove imported or downloaded changes">Reset to built-in data</button>
+      </div>
+    </section>
+
+    <!-- Results (both modes) -->
+    <section class="results">
+      <div class="section-head results-head" id="results-head" hidden>
+        <h2>Results</h2>
+        <button id="clear" class="btn btn-danger btn-sm" title="Clear the results and the Values box to start again">Clear</button>
+      </div>
+      <div aria-live="polite"><div id="notice" hidden></div></div>
+      <div class="card stats" id="stats">
+        <div class="stat created"><b id="s-created">0</b><span>Created</span></div>
+        <div class="stat new"><b id="s-new">0</b><span>New</span></div>
+        <div class="stat exists"><b id="s-exists">0</b><span>Already exist</span></div>
+        <div class="stat error"><b id="s-error">0</b><span>Failed</span></div>
+      </div>
+      <div class="card" id="log"></div>
+    </section>
+  </main>
+
+  <footer>
+    <span>Keep this tab open while values are being created.</span>
+    <span id="version"></span>
+  </footer>
+
   <script src="popup.js"></script>
   <script src="emr-data.js"></script>
   <script src="emr-scan.js"></script>
   <script src="picker.js"></script>
   <script src="emr.js"></script>
   <script src="automatch.js"></script>
+  <script src="emr-io.js"></script>
+  <script src="settings.js"></script>
   <script src="tabs.js"></script>
+  <script src="panel-port.js"></script>
 </body>
 </html>

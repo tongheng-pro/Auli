@@ -1,12 +1,53 @@
 const $ = (id) => document.getElementById(id);
 const logEl = $('log');
-const LABELS = { created: 'Created', new: 'New', exists: 'Skipped', error: 'Error' };
+const LABELS = { created: 'Created', new: 'New', exists: 'Already exists', error: 'Failed' };
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-function msg(text, isErr = false) {
+// Line in the results list. kind: true / 'err' = error, 'head' = list heading
+function msg(text, kind = false) {
   const d = document.createElement('div');
-  d.className = 'msg' + (isErr ? ' err' : '');
+  d.className = 'msg' + (kind === true || kind === 'err' ? ' err' : kind === 'head' ? ' head' : '');
   d.textContent = text;
   logEl.appendChild(d);
+}
+
+// Status box above the results. kind: 'info' | 'busy' | 'ok' | 'err'
+function notice(kind, title, detail = '') {
+  const n = $('notice');
+  n.className = 'notice ' + kind;
+  n.setAttribute('role', kind === 'err' ? 'alert' : 'status');
+  n.innerHTML = '';
+  const box = document.createElement('div');
+  const b = document.createElement('b');
+  b.textContent = title;
+  box.appendChild(b);
+  if (detail) box.append(detail);
+  n.appendChild(box);
+  n.hidden = false;
+  $('results-head').hidden = false;
+}
+function clearResults() {
+  $('results-head').hidden = true;
+  $('notice').hidden = true;
+  logEl.innerHTML = '';
+  $('stats').classList.remove('show');
+}
+
+// Plain-language summary of a run
+function summarize(results, createMode) {
+  const c = { created: 0, new: 0, exists: 0, error: 0 };
+  results.forEach((r) => (c[r.status] = (c[r.status] || 0) + 1));
+  if (c.error) {
+    return notice('err', `${plural(c.error, 'value')} could not be created.`,
+      'The reason is shown under each failed value below. Fix it on the page or try again.');
+  }
+  if (!createMode) {
+    return c.new
+      ? notice('info', `${plural(c.new, 'value')} will be created.`, ` ${c.exists} already ${c.exists === 1 ? 'exists' : 'exist'} and will be skipped. Click "Create values" to add them.`)
+      : notice('ok', 'Nothing to create.', ' All values already exist in this list.');
+  }
+  notice('ok', c.created ? `Done. ${plural(c.created, 'value')} created.` : 'Done. Nothing new to create.',
+    c.exists ? ` ${c.exists} already existed and ${c.exists === 1 ? 'was' : 'were'} skipped.` : '');
 }
 
 function addItem(x) {
@@ -52,9 +93,34 @@ function parseInput(text) {
 }
 
 function setBusy(btn, busy) {
-  $('run').disabled = $('scan').disabled = busy;
+  $('run').disabled = $('scan').disabled = $('clear').disabled = busy;
   btn.classList.toggle('busy', busy);
 }
+
+// Value List page on any host / install path, e.g. http://hospitals.test/backend/value-list?type=hospital
+// or https://my-hospital.org/hms/backend/value-list?type=… (not …/value-list/create)
+function isValueListUrl(url) {
+  try { return /\/value-list\/?$/.test(new URL(url).pathname); } catch { return false; }
+}
+
+// Seconds to wait after each created value (Settings › Creating), to stay under the server's rate limit.
+// Assumes Laravel's usual 60 requests/minute: one value ≈ 3 requests (open form, save, reload table)
+// ≈ 1.5 s of work, so at least ~1.5 s extra wait keeps it under 1 request/second. 2 s leaves a margin.
+const MIN_DELAY = 2;
+const MAX_DELAY = 60;
+function getDelay() {
+  return new Promise((r) => chrome.storage.local.get('createDelay', (v) => {
+    const n = Number(v.createDelay);
+    // Older saved values below the minimum are raised to it
+    r(Number.isFinite(n) ? Math.min(MAX_DELAY, Math.max(MIN_DELAY, n)) : MIN_DELAY);
+  }));
+}
+// "about 2 min" for n values (≈1.5 s per save + the wait)
+function estimate(n, delay) {
+  const sec = Math.ceil(n * (1.5 + delay));
+  return sec < 60 ? `about ${sec} s` : `about ${Math.ceil(sec / 60)} min`;
+}
+const seconds = (d) => `${d} second${d === 1 ? '' : 's'}`;
 
 async function getTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -78,42 +144,56 @@ async function listName(tabId) {
   }
 }
 
+const NOT_VALUE_LIST = ['This tab is not a Value List page.',
+  ' In the hospital system go to Hospital › Value List, open a list, then try again.'];
+
+// Error next to the Values box
+function valuesError(text) {
+  const help = $('values-help');
+  $('values').classList.toggle('invalid', !!text);
+  help.classList.toggle('err', !!text);
+  if (text) help.textContent = text;
+  else help.innerHTML = 'Put each value on its own line. To add a description, use <code>Name | Description</code>.';
+}
+
 async function start(createMode, btn) {
   const items = parseInput($('values').value);
-  logEl.innerHTML = '';
-  $('stats').classList.remove('show');
-  if (!items.length) return msg('Please enter at least one value.', true);
-
-  const tab = await getTab();
-  if (!tab || !/\/backend\/value-list/.test(tab.url || '')) {
-    return msg('Open a Value List page first (…/backend/value-list?type=…).', true);
+  clearResults();
+  if (!items.length) {
+    valuesError('Enter at least one value, one per line, or pick an EMR group above.');
+    $('values').focus();
+    return;
   }
 
+  const tab = await getTab();
+  if (!tab || !isValueListUrl(tab.url)) return notice('err', ...NOT_VALUE_LIST);
+
+  const delay = await getDelay();
   if (createMode) {
     const name = await listName(tab.id);
-    const n = items.length + (items.length === 1 ? ' value' : ' values');
-    if (!confirm(`Are you sure you want to create ${n} in "${name}"?\n\nValues that already exist will be skipped.`)) return;
+    if (!confirm(`Are you sure you want to create ${plural(items.length, 'value')} in "${name}"?\n\n` +
+      `Values that already exist will be skipped.\nWaits ${seconds(delay)} between values (up to ${estimate(items.length, delay)}).`)) return;
   }
 
   setBusy(btn, true);
-  msg(createMode ? 'Scanning & creating… keep this tab open.' : 'Scanning existing values…');
+  notice('busy', createMode ? `Creating ${plural(items.length, 'value')}…` : 'Checking existing values…',
+    createMode ? ` Waiting ${seconds(delay)} between values. Keep this tab open until it finishes.` : '');
 
   try {
     const [res] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       world: 'MAIN',
       func: pageWorker,
-      args: [items, createMode],
+      args: [items, createMode, delay],
     });
     const r = res.result;
-    logEl.innerHTML = '';
-    if (r.error) return msg('Error: ' + r.error, true);
-    $('type').textContent = r.type;
+    if (r.error) return notice('err', 'The page is not ready.', ` ${r.error} Reload the page and try again.`);
+    $('type').textContent = 'Value List · ' + r.type;
     setStats(r.results);
     r.results.forEach(addItem);
+    summarize(r.results, createMode);
   } catch (e) {
-    logEl.innerHTML = '';
-    msg('Error: ' + e.message, true);
+    notice('err', 'Could not work with this page.', ` ${e.message}. Reload the page and try again.`);
   } finally {
     setBusy(btn, false);
   }
@@ -122,22 +202,23 @@ async function start(createMode, btn) {
 // live value counter
 $('values').addEventListener('input', () => {
   const n = parseInput($('values').value).length;
-  $('count').textContent = n + (n === 1 ? ' value' : ' values');
+  $('count').textContent = plural(n, 'value');
+  if (n) valuesError('');
 });
 
-// show current list type (side panel stays open, so refresh on tab switch / navigation)
+// show current page (side panel stays open, so refresh on tab switch / navigation)
 async function showType() {
   const tab = await getTab();
   const t = $('type');
+  let ok = false;
   try {
     const u = new URL(tab.url);
-    if (!u.pathname.includes('/backend/value-list')) throw 0;
-    t.textContent = u.searchParams.get('type') || 'value-list';
-    t.classList.remove('bad');
-  } catch {
-    t.textContent = 'Not a Value List page';
-    t.classList.add('bad');
-  }
+    ok = isValueListUrl(tab.url);
+    if (ok) t.textContent = 'Value List · ' + (u.searchParams.get('type') || 'value-list');
+  } catch {}
+  if (!ok) t.textContent = 'Not a Value List page';
+  $('page-status').classList.toggle('bad', !ok);
+  $('page-hint').textContent = ok ? '' : 'Go to Hospital › Value List in the hospital system and open a list.';
 }
 showType();
 chrome.tabs.onActivated.addListener(showType);
@@ -145,9 +226,22 @@ chrome.tabs.onUpdated.addListener((id, info, tab) => { if (tab.active && info.ur
 
 $('scan').addEventListener('click', (e) => start(false, e.currentTarget));
 $('run').addEventListener('click', (e) => start(true, e.currentTarget));
+// Clear: results + the One by one form, ready for the next list
+$('clear').addEventListener('click', () => {
+  clearResults();
+  $('values').value = '';
+  $('values').dispatchEvent(new Event('input')); // reset the value counter
+  valuesError('');
+  const group = $('emr-group');
+  group.value = '';
+  group.dispatchEvent(new Event('sync')); // update the group picker label
+  chrome.storage.local.set({ emrGroup: '' });
+  (document.querySelector('.tab.active') || $('values')).focus();
+});
+$('version').textContent = 'v' + chrome.runtime.getManifest().version;
 
 /* ---------- Runs inside the page (MAIN world, has jQuery/DataTables) ---------- */
-async function pageWorker(items, createMode) {
+async function pageWorker(items, createMode, delaySec = 0) {
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const norm = (s) => String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
   const $ = window.jQuery;
@@ -188,7 +282,11 @@ async function pageWorker(items, createMode) {
   const results = [];
 
   // ---- 2. Create the missing ones through the page's own Add form ----
-  const addBtn = [...document.querySelectorAll('a,button')].find((a) => a.textContent.trim() === 'Add');
+  // Add button: by its create URL first, so it also works when the page is in Khmer
+  const clickables = [...document.querySelectorAll('a,button')];
+  const addBtn = clickables.find((a) => /value-list\/create/.test((a.getAttribute('onclick') || '') + (a.getAttribute('href') || ''))) ||
+    clickables.find((a) => ['add', 'បន្ថែម'].includes(a.textContent.trim().toLowerCase())) ||
+    document.querySelector('h4 .fa-plus')?.closest('a,button');
   const isOpen = () => modal && $(modal).hasClass('in') && getComputedStyle(modal).display !== 'none';
 
   if (isOpen()) { $(modal).modal('hide'); await sleep(500); }
@@ -219,13 +317,13 @@ async function pageWorker(items, createMode) {
     if (closed) {
       existing.add(norm(item.name));
       results.push({ name: item.name, status: 'created' });
-      await sleep(700); // let the table reload
+      await sleep(Math.max(700, delaySec * 1000)); // let the table reload + wait to avoid the rate limit
     } else {
       const msg = [...modal.querySelectorAll('.help-block,.error,.invalid-feedback,.text-danger')]
         .map((e) => e.textContent.trim()).filter(Boolean).join('; ');
       results.push({ name: item.name, status: 'error', note: msg || 'form did not close (not saved?)' });
       $(modal).modal('hide');
-      await sleep(500);
+      await sleep(Math.max(500, delaySec * 1000));
     }
   }
 

@@ -18,8 +18,10 @@
   // Runs in the page: every value-list link (left list + tabs)
   function readValueListLinks() {
     const seen = new Map();
-    document.querySelectorAll('a[href*="value-list?type="]').forEach((a) => {
-      const type = new URL(a.href).searchParams.get('type');
+    document.querySelectorAll('a[href*="value-list"]').forEach((a) => {
+      const u = new URL(a.href, location.href);
+      if (!/\/value-list\/?$/.test(u.pathname)) return; // skip …/value-list/create etc.
+      const type = u.searchParams.get('type');
       const label = a.textContent.replace(/\s+/g, ' ').trim();
       if (type && label && !seen.has(type)) seen.set(type, { type, label, url: a.href });
     });
@@ -74,18 +76,20 @@
         if (on) off(m).clear(); else m.items.forEach((it) => off(m).add(it.name));
         render(currentType);
       });
+      cb.setAttribute('aria-label', `Create values in ${m.label}`);
       cb.indeterminate = n > 0 && n < m.items.length;
       const txt = document.createElement('div');
       const b = document.createElement('b');
       b.textContent = m.label;
       const sm = document.createElement('small');
-      sm.textContent = `${g.title} · ${n} / ${m.items.length} values`;
+      sm.textContent = `${n} / ${m.items.length} values · ${g.title}`;
       txt.append(b, sm);
       txt.addEventListener('click', () => cb.click());
       const tog = document.createElement('button');
       tog.type = 'button';
       tog.className = 'am-toggle' + (open ? ' open' : '');
-      tog.title = open ? 'Hide values' : 'Choose values';
+      tog.title = open ? 'Hide values' : 'Choose which values to create';
+      tog.setAttribute('aria-label', `${open ? 'Hide' : 'Show'} values of ${m.label}`);
       tog.setAttribute('aria-expanded', open);
       tog.addEventListener('click', () => {
         if (open) expanded.delete(m.type); else expanded.add(m.type);
@@ -126,14 +130,15 @@
   async function detect() {
     if (running || !window.EMR) return;
     const tab = await getTab();
+    if (!matches.length) info.textContent = 'Looking for matching lists…';
     matches = [];
     let page = null;
     try {
-      if (!/\/backend\/value-list/.test(tab.url || '')) throw 0;
+      if (!isValueListUrl(tab.url)) throw 0;
       [{ result: page }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, func: readValueListLinks });
     } catch {
       render();
-      info.textContent = 'Open a Value List page to match its lists with the EMR groups.';
+      info.textContent = 'Open a Value List page in this tab. Lists that match an EMR group will appear here.';
       return;
     }
 
@@ -145,7 +150,7 @@
     render(page.type);
     info.textContent = matches.length
       ? `${matches.length} of ${page.links.length} lists on this page match an EMR group.`
-      : 'No list on this page matches an EMR group.';
+      : `None of the ${page.links.length} lists on this page match an EMR group. Try another tab (Medical Record, Examination…), or use "One by one".`;
 
     // Current list matches -> pre-fill Values (unless the user typed their own)
     const cur = matches.find((m) => m.type === page.type);
@@ -181,39 +186,42 @@
     if (!todo.length) return;
     const total = todo.reduce((n, m) => n + m.items.length, 0);
     const names = todo.map((m) => `• ${m.label} (${m.items.length})`).join('\n');
-    if (!confirm(`Are you sure you want to create all?\n\n${todo.length} lists · up to ${total} values:\n${names}\n\nValues that already exist will be skipped.`)) return;
+    const delay = await getDelay();
+    if (!confirm(`Are you sure you want to create all?\n\n${todo.length} lists · up to ${total} values:\n${names}\n\n` +
+      `Values that already exist will be skipped.\nWaits ${seconds(delay)} between values (up to ${estimate(total, delay)}).`)) return;
     const tab = await getTab();
     const startUrl = tab.url;
     running = true;
     runBtn.disabled = true;
     setBusy(runBtn, true);
-    logEl.innerHTML = '';
-    $('stats').classList.remove('show');
+    clearResults();
     const all = [];
+    const fail = (m, note) => { const x = { name: m.label, status: 'error', note }; addItem(x); all.push(x); setStats(all); };
 
     try {
       for (let i = 0; i < todo.length; i++) {
         const m = todo[i];
-        info.textContent = `Creating ${i + 1} / ${todo.length}: ${m.label}…`;
+        if (i > 0 && delay) await sleep(delay * 1000); // pause between lists too
+        notice('busy', `Creating list ${i + 1} of ${todo.length}: ${m.label}…`, ` Waiting ${seconds(delay)} between values. Keep this tab open until it finishes.`);
         await navigate(tab.id, m.url);
         const [{ result: ready }] = await chrome.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: waitForTable });
-        msg(`${m.label}`);
-        if (!ready) { addItem({ name: m.label, status: 'error', note: 'table did not load' }); continue; }
+        msg(m.label, 'head');
+        if (!ready) { fail(m, 'The list page did not load in time. Run again to retry; existing values are skipped.'); continue; }
 
         const items = m.items.map((v) => ({ name: v.name, description: EMR.describe(v.it).replace(/\|/g, '/') }));
         await sleep(300);
         const [res] = await chrome.scripting.executeScript({
-          target: { tabId: tab.id }, world: 'MAIN', func: pageWorker, args: [items, true],
+          target: { tabId: tab.id }, world: 'MAIN', func: pageWorker, args: [items, true, delay],
         });
         const r = res.result;
-        if (r.error) { addItem({ name: m.label, status: 'error', note: r.error }); continue; }
+        if (r.error) { fail(m, r.error); continue; }
         r.results.forEach(addItem);
         all.push(...r.results);
         setStats(all);
       }
-      info.textContent = `Done: ${todo.length} lists processed.`;
+      summarize(all, true);
     } catch (e) {
-      msg('Error: ' + e.message, true);
+      notice('err', 'Stopped before finishing.', ` ${e.message}. Values created so far are kept. Run again to finish; existing values are skipped.`);
     } finally {
       running = false;
       setBusy(runBtn, false);
@@ -226,4 +234,5 @@
   document.addEventListener('emr-data', detect);
   chrome.tabs.onActivated.addListener(detect);
   chrome.tabs.onUpdated.addListener((id, ch, tab) => { if (tab.active && ch.status === 'complete') detect(); });
+  detect(); // EMR data may already be loaded before this script ran
 })();
