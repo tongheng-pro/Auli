@@ -183,8 +183,35 @@
   .cols th { text-align: left; vertical-align: top; white-space: nowrap; padding: 5px 8px 5px 0; font: 600 12px ui-monospace, Menlo, Consolas, monospace; }
   .cols td { padding: 5px 0; color: var(--muted); }
   .cols tr + tr { border-top: 1px solid var(--line); }
+  .sheet-row { display: flex; gap: 6px; }
+  .sheet-row input { flex: 1; min-width: 0; height: 36px; padding: 0 10px; border: 1px solid var(--input-line); border-radius: 6px;
+    background: var(--input); color: var(--text); font: 14px var(--font); }
+  .sheet-row input::placeholder { color: var(--placeholder); }
+  .sheet-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--ring); }
+  .sheet-row input.invalid { border-color: var(--err); }
+  .sheet-row .btn { flex: none; min-height: 36px; }
+  .sheet-auto { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; cursor: pointer; }
+  .sheet-auto input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); cursor: pointer; }
   .io-more { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
   .io-more .btn { flex: 1 1 auto; }
+
+  /* ---- Confirm dialog (ask() in popup.js) ---- */
+  dialog.ask { width: calc(100% - 32px); max-width: 380px; padding: 18px 18px 16px; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--card); color: var(--text); box-shadow: 0 12px 40px var(--shadow); font: 14px/1.45 var(--font); }
+  dialog.ask::backdrop { background: rgba(15,18,22,.45); }
+  dialog.ask[open] { animation: ask-in .14s ease-out; }
+  @keyframes ask-in { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+  .ask h2 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+  .ask p { margin: 0 0 10px; color: var(--muted); }
+  .ask-items { margin: 0 0 12px; padding: 0; list-style: none; max-height: 220px; overflow: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--subtle); }
+  .ask-items li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; }
+  .ask-items li + li { border-top: 1px solid var(--line); }
+  .ask-items span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+  .ask-items b { flex: none; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 12px; font-weight: 600; }
+  .ask-notes { margin: 0 0 16px; padding-left: 18px; font-size: 13px; color: var(--muted); }
+  .ask-notes li + li { margin-top: 2px; }
+  .ask-btns { display: flex; justify-content: flex-end; gap: 8px; }
+  .ask-btns .btn { min-width: 96px; }
 
   /* ---- Matched lists ---- */
   #am-list { max-height: 360px; overflow: auto; }
@@ -211,17 +238,23 @@
   /* ---- Group picker (picker.js) ---- */
   .picker-btn { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 6px 12px 6px 10px; text-align: left; font-weight: 400; }
   .picker-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .picker-label.placeholder { color: var(--placeholder); }
+  .picker-label.placeholder { color: var(--muted); }
   .picker-chev { flex: none; width: 7px; height: 7px; border: solid var(--muted); border-width: 0 1.6px 1.6px 0; transform: rotate(45deg); margin-top: -3px; transition: transform .15s; }
   .picker-btn[aria-expanded="true"] .picker-chev { transform: rotate(-135deg); margin-top: 3px; }
   .picker-pop { margin-top: 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); box-shadow: 0 2px 8px var(--shadow); }
   .picker-search { display: block; width: calc(100% - 16px); height: 34px; margin: 8px; padding: 0 10px; }
   .picker-list { max-height: 300px; overflow: auto; padding-bottom: 6px; }
-  .picker-head { padding: 8px 12px 3px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
-  .picker-item { padding: 7px 12px 7px 26px; cursor: pointer; position: relative; }
+  .picker-head { position: sticky; top: 0; z-index: 1; padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--accent);
+    background: var(--subtle); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .picker-head:first-child { border-top: 0; }
+  .picker-item { display: flex; align-items: baseline; gap: 10px; padding: 8px 12px 8px 28px; cursor: pointer; position: relative; color: var(--text); }
+  .picker-item .picker-name { flex: 1; min-width: 0; }
+  .picker-count { flex: none; min-width: 22px; padding: 0 7px; border-radius: 999px; background: var(--bg); color: var(--muted); font-size: 12px; font-weight: 600; text-align: center; }
+  .picker-item.active .picker-count, .picker-item.selected .picker-count { background: var(--card); color: var(--accent); }
   .picker-item.active { background: var(--accent-soft); }
   .picker-item.selected { font-weight: 600; }
-  .picker-item.selected::before { content: "✓"; position: absolute; left: 9px; color: var(--accent); }
+  .picker-item.selected { color: var(--accent); }
+  .picker-item.selected::before { content: "✓"; position: absolute; left: 10px; color: var(--accent); }
   .picker-empty { padding: 10px 12px 12px; color: var(--muted); font-size: 13px; }
 
   /* ---- Results ---- */
@@ -293,13 +326,13 @@
     <!-- Shared setting -->
     <div class="card">
       <div class="field">
-        <label class="field-label" for="emr-desc">Description for EMR values</label>
+        <label class="field-label" for="emr-desc">Name / description for EMR values</label>
         <select id="emr-desc">
-          <option value="none">None (name only)</option>
-          <option value="khmer">Khmer term</option>
-          <option value="en">English</option>
-          <option value="khmer-en">Khmer - English</option>
-          <option value="code">Code</option>
+          <option value="none">English name only</option>
+          <option value="khmer">Khmer name only</option>
+          <option value="en">English name | English description</option>
+          <option value="khmer-en">English name | Khmer - English description</option>
+          <option value="code">English name | Code</option>
         </select>
       </div>
     </div>
@@ -314,7 +347,10 @@
       <p class="pane-intro">Fill every list on this page from the EMR standard. Lists with the same name as an EMR group are found automatically. Untick anything you don't want, then create.</p>
       <div class="section-head">
         <h2>Matched lists</h2>
-        <small id="am-count"></small>
+        <div class="links">
+          <small id="am-count"></small>
+          <button id="am-all" class="link" type="button" hidden>Uncheck all</button>
+        </div>
       </div>
       <div class="card" id="am-list"></div>
       <div class="empty" id="am-info">Open a Value List page to find lists that match the EMR groups.</div>
@@ -397,6 +433,16 @@
         </div>
       </div>
 
+      <div class="card field io-actions">
+        <label class="field-label" for="sheet-url">Team Google Sheet <small>edit together, sync live</small></label>
+        <div class="sheet-row">
+          <input type="url" id="sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" spellcheck="false" aria-describedby="sheet-status">
+          <button id="sheet-sync" class="btn btn-primary btn-sm"><i class="spin"></i>Sync now</button>
+        </div>
+        <label class="sheet-auto"><input type="checkbox" id="sheet-auto">Keep in sync (checks every 30 seconds while Auli is open)</label>
+        <p class="help" id="sheet-status" aria-live="polite">Same columns as the CSV export. Share the sheet as <b>Anyone with the link: Viewer</b>, then paste its link.</p>
+      </div>
+
       <div id="io-status" hidden></div>
 
       <details class="card guide" open>
@@ -417,18 +463,19 @@
         <table class="cols">
           <caption>Columns</caption>
           <tr><th>group</th><td><b>Required.</b> Group name. Use the same name as the list in the hospital system (e.g. <i>Birth Control Type</i>) so "Sync all" can match it.</td></tr>
-          <tr><th>value</th><td><b>Required.</b> The value to create (e.g. <i>Condom</i>).</td></tr>
-          <tr><th>description</th><td>English description (optional).</td></tr>
-          <tr><th>khmer</th><td>Khmer term (optional).</td></tr>
-          <tr><th>code</th><td>Code (optional; the value is used if empty).</td></tr>
+          <tr><th>code</th><td>Code (optional; e.g. <i>OBVA-S000099</i>).</td></tr>
+          <tr><th>english</th><td><b>Required.</b> English name of the value (e.g. <i>Combined Oral Contraceptive (COC)</i>).</td></tr>
+          <tr><th>khmer</th><td>Khmer name (optional; e.g. <i>ថ្នាំគ្រាប់ស៊ីអូស៊ី</i>). Created instead of the English name when "Khmer name only" is chosen.</td></tr>
+          <tr><th>description</th><td>Longer English description (optional).</td></tr>
           <tr><th>page, section</th><td>Only for grouping in the group picker (optional; "Custom" if empty).</td></tr>
         </table>
+        <p class="help"><b>Team Google Sheet:</b> in Google Sheets, File › Import › upload the exported CSV. Click Share › General access › <b>Anyone with the link</b> (Viewer). Paste the sheet link above and turn on <b>Keep in sync</b>. Your team edits the sheet; Auli picks up changes within 30 seconds. Use the tab the link points to (the <code>#gid=</code> part). If a row has a problem, the current data is kept until it is fixed.</p>
         <p class="help">Example:</p>
-        <pre>group,value,description,khmer
-Birth Control Type,Condom,,ស្រោមអនាម័យ
-Birth Control Type,Pill,Oral pill,ថ្នាំគ្រាប់
-My New List,First value,,</pre>
-        <p class="help">Which description is used when creating is set by "Description for EMR values" on the main screen. To undo all changes, use <b>Reset to built-in data</b>.</p>
+        <pre>group,code,english,khmer
+Birth Control Type,OBVA-S000099,Combined Oral Contraceptive (COC),ថ្នាំគ្រាប់ស៊ីអូស៊ី
+Birth Control Type,,Condom,ស្រោមអនាម័យ
+My New List,,First value,</pre>
+        <p class="help">Whether the English or Khmer name is created, and which description, is set by "Name / description for EMR values" on the main screen. To undo all changes, use <b>Reset to built-in data</b>.</p>
       </details>
 
       <div class="io-more">
@@ -466,6 +513,7 @@ My New List,First value,,</pre>
   <script src="emr.js"></script>
   <script src="automatch.js"></script>
   <script src="emr-io.js"></script>
+  <script src="sheet-sync.js"></script>
   <script src="settings.js"></script>
   <script src="tabs.js"></script>
   <script src="panel-port.js"></script>

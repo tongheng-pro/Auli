@@ -4,10 +4,10 @@
   const listEl = el('am-list');
   const info = el('am-info');
   const runBtn = el('am-run');
+  const allBtn = el('am-all');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   let matches = [];
   let running = false;
-  let lastAuto = null; // Values text we filled ourselves (safe to replace)
 
   // "Birth Control Type (វិធីពន្យារកំណើត)" / "birth_control_type" -> "birth control type"
   const key = (s) => String(s || '')
@@ -15,10 +15,13 @@
     .toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
     .replace(/s\b/g, ''); // Types == Type
 
-  // Runs in the page: every value-list link (left list + tabs)
+  // Runs in the page: the value-list links in the left list of the open tab. The top tabs (.nav-tabs)
+  // are skipped: each links to the first list of another category (e.g. "Patient" -> type=contact-relation),
+  // which is not on this page.
   function readValueListLinks() {
     const seen = new Map();
     document.querySelectorAll('a[href*="value-list"]').forEach((a) => {
+      if (a.closest('.nav-tabs, [role="tablist"]')) return;
       const u = new URL(a.href, location.href);
       if (!/\/value-list\/?$/.test(u.pathname)) return; // skip …/value-list/create etc.
       const type = u.searchParams.get('type');
@@ -50,7 +53,7 @@
   function valuesOf(g) {
     const seen = new Set();
     return g.items
-      .map((it) => ({ name: it.value.replace(/\s+/g, ' ').trim(), it }))
+      .map((it) => ({ name: EMR.nameOf(it).replace(/\s+/g, ' ').trim(), it }))
       .filter((v) => v.name && !seen.has(v.name.toLowerCase()) && seen.add(v.name.toLowerCase()));
   }
 
@@ -62,7 +65,10 @@
     return cb;
   }
 
-  function render(currentType) {
+  let shownType = null; // list open in the tab, for re-drawing after a click
+
+  function render(currentType = shownType) {
+    shownType = currentType;
     const top = listEl.scrollTop; // keep scroll position when re-drawing after a click
     listEl.innerHTML = '';
     matches.forEach((m) => {
@@ -124,6 +130,10 @@
     const lists = matches.filter((m) => picked(m).length).length;
     const vals = matches.reduce((n, m) => n + picked(m).length, 0);
     el('am-count').textContent = matches.length ? `${lists} lists · ${vals} values` : '';
+    const all = matches.length > 0 && matches.every((m) => picked(m).length === m.items.length);
+    allBtn.hidden = !matches.length;
+    allBtn.disabled = running;
+    allBtn.textContent = all ? 'Uncheck all' : 'Check all';
     runBtn.disabled = running || !vals;
   }
 
@@ -152,13 +162,6 @@
       ? `${matches.length} of ${page.links.length} lists on this page match an EMR group.`
       : `None of the ${page.links.length} lists on this page match an EMR group. Try another tab (Medical Record, Examination…), or use "One by one".`;
 
-    // Current list matches -> pre-fill Values (unless the user typed their own)
-    const cur = matches.find((m) => m.type === page.type);
-    const ta = el('values');
-    if (cur && (!ta.value.trim() || ta.value === lastAuto)) {
-      EMR.select(cur.group);
-      lastAuto = ta.value;
-    }
   }
 
   function navigate(tabId, url) {
@@ -185,14 +188,19 @@
     const todo = matches.map((m) => ({ ...m, items: picked(m) })).filter((m) => m.items.length);
     if (!todo.length) return;
     const total = todo.reduce((n, m) => n + m.items.length, 0);
-    const names = todo.map((m) => `• ${m.label} (${m.items.length})`).join('\n');
     const delay = await getDelay();
-    if (!confirm(`Are you sure you want to create all?\n\n${todo.length} lists · up to ${total} values:\n${names}\n\n` +
-      `Values that already exist will be skipped.\nWaits ${seconds(delay)} between values (up to ${estimate(total, delay)}).`)) return;
+    if (!await ask({
+      title: `Create values in ${plural(todo.length, 'list')}?`,
+      text: `Up to ${plural(total, 'value')}:`,
+      items: todo.map((m) => [m.label, m.items.length]),
+      notes: ['Values that already exist will be skipped.',
+        `Waits ${seconds(delay)} between values (${estimate(total, delay)} in total).`],
+      ok: 'Create all',
+    })) return;
     const tab = await getTab();
     const startUrl = tab.url;
     running = true;
-    runBtn.disabled = true;
+    runBtn.disabled = allBtn.disabled = true;
     setBusy(runBtn, true);
     clearResults();
     const all = [];
@@ -230,6 +238,12 @@
     }
   }
 
+  // Every value of every list ticked -> untick all; otherwise tick all
+  allBtn.addEventListener('click', () => {
+    const all = matches.every((m) => picked(m).length === m.items.length);
+    matches.forEach((m) => { if (all) m.items.forEach((it) => off(m).add(it.name)); else off(m).clear(); });
+    render();
+  });
   runBtn.addEventListener('click', runAll);
   document.addEventListener('emr-data', detect);
   chrome.tabs.onActivated.addListener(detect);

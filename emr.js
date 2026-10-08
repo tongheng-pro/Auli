@@ -27,7 +27,8 @@
       }
       const o = document.createElement('option');
       o.value = i;
-      o.textContent = `${g.title} · ${g.items.length}`;
+      o.textContent = g.title;
+      o.dataset.count = g.items.length;
       og.appendChild(o);
     });
     groupSel.value = keep;
@@ -39,6 +40,7 @@
   function summary() {
     const values = data.groups.reduce((n, g) => n + g.items.length, 0);
     const from = data.source === 'import' ? `Imported from ${data.file || 'a file'} on ${data.scannedAt}`
+      : data.source === 'sheet' ? `Synced from Google Sheet, last change ${data.syncedAt || data.scannedAt}`
       : data.source === 'website' || (data !== EMR_DEFAULT && !data.source) ? `Downloaded from emr-doc.pmrs2.org on ${data.scannedAt}`
       : `Built-in values from ${data.scannedAt}`;
     return `${data.groups.length} groups, ${values} values. ${from}.`;
@@ -58,9 +60,12 @@
     renderGroups();
   }
 
+  // Name to create: Khmer mode uses the Khmer name (English when there is none)
+  const nameOf = (it) => (descSel.value === 'khmer' && it.khmer.trim()) || it.value;
+
   function describe(it) {
     switch (descSel.value) {
-      case 'khmer': return it.khmer;
+      case 'khmer': return ''; // Khmer is the name itself
       case 'en': return it.description;
       case 'khmer-en': return [it.khmer, it.description].filter(Boolean).join(' - ');
       case 'code': return it.code;
@@ -73,7 +78,7 @@
     if (!g) return;
     const lines = g.items.map((it) => {
       const d = describe(it).replace(/\|/g, '/');
-      return d ? `${it.value} | ${d}` : it.value;
+      return d ? `${nameOf(it)} | ${d}` : nameOf(it);
     });
     const ta = el('values');
     ta.value = lines.join('\n');
@@ -102,15 +107,19 @@
   window.EMR = {
     get data() { return data; },
     describe,
+    nameOf,
     summary,
     setData,
     resetData,
     refresh,
-    select(i) { groupSel.value = i; groupSel.dispatchEvent(new Event('sync')); store.set('emrGroup', String(i)); fill(); },
   };
 
   groupSel.addEventListener('change', () => { store.set('emrGroup', groupSel.value); fill(); });
-  descSel.addEventListener('change', () => { store.set('emrDescMode', descSel.value); fill(); });
+  descSel.addEventListener('change', () => {
+    store.set('emrDescMode', descSel.value);
+    fill();
+    document.dispatchEvent(new Event('emr-data')); // names may change: let Auto Match re-match
+  });
   refreshBtn.addEventListener('click', () => refresh().catch(() => {}));
 
   (async () => {

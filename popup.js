@@ -11,6 +11,47 @@ function msg(text, kind = false) {
   logEl.appendChild(d);
 }
 
+// Confirm dialog in Auli's own style (instead of the browser's confirm()). Resolves true on OK.
+// ask({ title, text, items: [[name, count]], notes: [...], ok: 'Create', danger: false })
+function ask({ title, text = '', items = [], notes = [], ok = 'OK', danger = false }) {
+  const d = document.createElement('dialog');
+  d.className = 'ask';
+  d.setAttribute('aria-labelledby', 'ask-title');
+  const h = Object.assign(document.createElement('h2'), { id: 'ask-title', textContent: title });
+  d.append(h);
+  if (text) d.append(Object.assign(document.createElement('p'), { textContent: text }));
+  if (items.length) {
+    const ul = Object.assign(document.createElement('ul'), { className: 'ask-items' });
+    items.forEach(([name, count]) => {
+      const li = document.createElement('li');
+      li.append(Object.assign(document.createElement('span'), { textContent: name, title: name }));
+      if (count !== undefined) li.append(Object.assign(document.createElement('b'), { textContent: count }));
+      ul.append(li);
+    });
+    d.append(ul);
+  }
+  if (notes.length) {
+    const ul = Object.assign(document.createElement('ul'), { className: 'ask-notes' });
+    notes.forEach((n) => ul.append(Object.assign(document.createElement('li'), { textContent: n })));
+    d.append(ul);
+  }
+  const row = Object.assign(document.createElement('div'), { className: 'ask-btns' });
+  const no = Object.assign(document.createElement('button'), { type: 'button', className: 'btn btn-secondary', textContent: 'Cancel' });
+  const yes = Object.assign(document.createElement('button'), { type: 'button', className: `btn ${danger ? 'btn-danger' : 'btn-primary'}`, textContent: ok });
+  row.append(no, yes);
+  d.append(row);
+  document.body.append(d);
+  return new Promise((resolve) => {
+    const close = (v) => { d.close(); d.remove(); resolve(v); };
+    no.addEventListener('click', () => close(false));
+    yes.addEventListener('click', () => close(true));
+    d.addEventListener('cancel', (e) => { e.preventDefault(); close(false); }); // Esc
+    d.addEventListener('click', (e) => { if (e.target === d) close(false); }); // click outside
+    d.showModal();
+    (danger ? no : yes).focus();
+  });
+}
+
 // Status box above the results. kind: 'info' | 'busy' | 'ok' | 'err'
 function notice(kind, title, detail = '') {
   const n = $('notice');
@@ -171,8 +212,13 @@ async function start(createMode, btn) {
   const delay = await getDelay();
   if (createMode) {
     const name = await listName(tab.id);
-    if (!confirm(`Are you sure you want to create ${plural(items.length, 'value')} in "${name}"?\n\n` +
-      `Values that already exist will be skipped.\nWaits ${seconds(delay)} between values (up to ${estimate(items.length, delay)}).`)) return;
+    if (!await ask({
+      title: `Create ${plural(items.length, 'value')}?`,
+      items: [[name, plural(items.length, 'value')]],
+      notes: ['Values that already exist will be skipped.',
+        `Waits ${seconds(delay)} between values (${estimate(items.length, delay)} in total).`],
+      ok: 'Create',
+    })) return;
   }
 
   setBusy(btn, true);

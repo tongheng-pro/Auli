@@ -1,10 +1,12 @@
 /* ---------- EMR data tab: export / import (CSV or JSON), update from website, reset ----------
-   CSV has one row per value:  group, value, description, khmer, code, page, section
+   CSV has one row per value:  group, code, english, khmer, description, page, section
+   ("english" is the value's name; older files with a "value" column still import)
    Rows with the same page + section + group become one group. */
 (() => {
   const el = (id) => document.getElementById(id);
   const status = el('io-status');
-  const COLS = ['group', 'value', 'description', 'khmer', 'code', 'page', 'section'];
+  const COLS = ['group', 'code', 'english', 'khmer', 'description', 'page', 'section'];
+  const ALIAS = { value: 'english', 'english name': 'english', 'khmer name': 'khmer' };
   const today = () => new Date().toISOString().slice(0, 10);
 
   function say(kind, title, detail = '') {
@@ -47,7 +49,7 @@
   function toCsv(groups) {
     const rows = [COLS];
     groups.forEach((g) => g.items.forEach((it) =>
-      rows.push([g.title, it.value, it.description, it.khmer, it.code, g.page, g.section])));
+      rows.push([g.title, it.code, it.value, it.khmer, it.description, g.page, g.section])));
     // BOM so Excel opens Khmer text correctly
     return '﻿' + rows.map((r) => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
   }
@@ -81,10 +83,10 @@
     const rows = parseCsv(text);
     const errors = [];
     if (!rows.length) return { errors: ['The file is empty.'] };
-    const head = rows[0].map((h) => h.trim().toLowerCase());
+    const head = rows[0].map((h) => { const k = h.trim().toLowerCase().replace(/\s+/g, ' '); return ALIAS[k] || k; });
     const col = Object.fromEntries(COLS.map((c) => [c, head.indexOf(c)]));
-    if (col.group < 0 || col.value < 0) {
-      return { errors: [`The first row must be the column names, including "group" and "value". Found: ${rows[0].join(', ') || '(nothing)'}.`] };
+    if (col.group < 0 || col.english < 0) {
+      return { errors: [`The first row must be the column names, including "group" and "english". Found: ${rows[0].join(', ') || '(nothing)'}.`] };
     }
     const map = new Map();
     let dupes = 0;
@@ -92,9 +94,9 @@
       const line = i + 2; // row number as shown in Excel
       const get = (c) => (col[c] >= 0 ? String(r[col[c]] ?? '').replace(/\s+/g, ' ').trim() : '');
       if (r.every((c) => !String(c).trim())) return; // blank row
-      const title = get('group'), value = get('value');
+      const title = get('group'), value = get('english');
       if (!title) return errors.push(`Row ${line}: "group" is empty.`);
-      if (!value) return errors.push(`Row ${line}: "value" is empty (group "${title}").`);
+      if (!value) return errors.push(`Row ${line}: "english" is empty (group "${title}").`);
       const page = get('page') || 'Custom', section = get('section') || page;
       const key = `${page}\u0000${section}\u0000${title}`;
       if (!map.has(key)) map.set(key, { page, section, title, items: [] });
@@ -131,6 +133,8 @@
     return { groups, errors, dupes: 0 };
   }
 
+  window.EMRIO = { groupsFromCsv }; // used by sheet-sync.js
+
   /* ---- Actions ---- */
   el('io-export-csv').addEventListener('click', () => {
     download(`emr-data-${today()}.csv`, toCsv(EMR.data.groups), 'text/csv;charset=utf-8');
@@ -161,27 +165,37 @@
       if (r.errors.length > shown.length) shown.push(`…and ${r.errors.length - shown.length} more.`);
       return say('err', `Nothing was imported. Fix ${r.errors.length === 1 ? 'this problem' : 'these problems'} in ${file.name} and import it again:`, shown);
     }
-    if (!r.groups.length) return say('err', 'Nothing was imported.', ` ${file.name} has no values. Add at least one row with a group and a value.`);
+    if (!r.groups.length) return say('err', 'Nothing was imported.', ` ${file.name} has no values. Add at least one row with a group and an english name.`);
 
     const values = r.groups.reduce((n, g) => n + g.items.length, 0);
-    const ok = confirm(`Import ${file.name}?\n\n${r.groups.length} groups, ${values} values` +
-      (r.dupes ? ` (${r.dupes} duplicate rows will be skipped)` : '') +
-      `.\n\nThis replaces the current EMR data in the extension. Tip: export first if you want a backup.`);
+    const ok = await ask({
+      title: 'Import this file?',
+      items: [[file.name, `${r.groups.length} groups · ${values} values`]],
+      notes: ['This replaces the current EMR data in Auli. Export first if you want a backup.',
+        ...(r.dupes ? [`${r.dupes} duplicate rows will be skipped.`] : [])],
+      ok: 'Import',
+    });
     if (!ok) return;
+    const paused = await SheetSync.pause();
     await EMR.setData(r.groups, { source: 'import', file: file.name });
     say('ok', `Imported ${r.groups.length} groups, ${values} values.`,
-      (r.dupes ? ` ${r.dupes} duplicate rows were skipped.` : '') + ' The new values are ready in "Sync all" and "One by one".');
+      (r.dupes ? ` ${r.dupes} duplicate rows were skipped.` : '') + ' The new values are ready in "Sync all" and "One by one".' + paused);
   });
 
   el('io-update').addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    if (!confirm('Download the latest values from emr-doc.pmrs2.org?\n\nThis replaces the current EMR data, including any changes you imported.')) return;
+    if (!await ask({
+      title: 'Update from the emr-doc website?',
+      text: 'Downloads the latest values from emr-doc.pmrs2.org.',
+      notes: ['This replaces the current EMR data, including imported or Google Sheet changes.'],
+      ok: 'Update',
+    })) return;
     btn.disabled = true;
     btn.classList.add('busy');
     say('busy', 'Downloading from emr-doc.pmrs2.org…');
     try {
       await EMR.refresh();
-      say('ok', 'EMR data updated from the website.');
+      say('ok', 'EMR data updated from the website.', await SheetSync.pause());
     } catch (err) {
       say('err', 'Could not download the EMR data.', ` ${err.message}. Check your internet connection and try again. Your current data was not changed.`);
     } finally {
@@ -191,9 +205,15 @@
   });
 
   el('io-reset').addEventListener('click', async () => {
-    if (!confirm('Reset EMR data to the values built into the extension?\n\nImported or downloaded changes will be removed. Export first if you want to keep them.')) return;
+    if (!await ask({
+      title: 'Reset to built-in data?',
+      text: 'EMR data goes back to the values built into Auli.',
+      notes: ['Imported, downloaded and Google Sheet changes are removed. Export first if you want to keep them.'],
+      ok: 'Reset', danger: true,
+    })) return;
+    const paused = await SheetSync.pause();
     await EMR.resetData();
-    say('ok', 'EMR data reset to the built-in values.');
+    say('ok', 'EMR data reset to the built-in values.', paused);
   });
 
   document.addEventListener('emr-data', () => setTimeout(showSummary));

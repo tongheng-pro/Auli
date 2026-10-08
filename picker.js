@@ -1,7 +1,8 @@
 /* ---------- Picker: in-panel searchable dropdown for a <select> ----------
    The native dropdown is drawn by the OS and spills outside the side panel,
    so the <select> stays hidden as the data model and this list is drawn inline.
-   Dispatch a 'sync' event on the select after changing its value/options in code. */
+   Dispatch a 'sync' event on the select after changing its value/options in code.
+   An option's data-count is shown as a badge on the right of its row. */
 function enhanceSelect(select, placeholder = 'Search…') {
   const wrap = document.createElement('div');
   wrap.className = 'picker';
@@ -43,7 +44,17 @@ function enhanceSelect(select, placeholder = 'Search…') {
       d.role = 'option';
       d.dataset.value = o.value;
       d.dataset.search = (o.textContent + ' ' + (groupLabel || '')).toLowerCase();
-      d.textContent = o.textContent;
+      const name = document.createElement('span');
+      name.className = 'picker-name';
+      name.textContent = o.textContent;
+      d.appendChild(name);
+      if (o.dataset.count) { // shown as a badge on the right, not mixed into the name
+        const c = document.createElement('span');
+        c.className = 'picker-count';
+        c.textContent = o.dataset.count;
+        c.title = `${o.dataset.count} values`;
+        d.appendChild(c);
+      }
       list.appendChild(d);
     };
     [...select.children].forEach((c) => {
